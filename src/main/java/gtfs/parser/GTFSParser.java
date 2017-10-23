@@ -2,12 +2,16 @@ package gtfs.parser;
 
 import gtfs.entities.GTFS;
 import java.io.BufferedReader;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
+import org.apache.commons.io.input.BOMInputStream;
+
 
 /**
  * A GTFS entity parser using Template Method pattern.
@@ -48,9 +52,10 @@ public abstract class GTFSParser<T extends GTFS> {
         String row[] = new String[numberOfParameters];
         
         int rowCount = 0;
-        try(BufferedReader reader = new BufferedReader(new FileReader(path))){
+        BOMInputStream input = new BOMInputStream(new FileInputStream(path),false);//Ignore BOM
+        try(BufferedReader reader = new BufferedReader(new InputStreamReader(input))){
             // read the header
-            String line = reader.readLine().replace("\ufeff", ""); //removes BOM
+            String line = reader.readLine();
             String firstRow[] = line.split(",");
             int columnsFound = firstRow.length;
             rowCount++;
