@@ -3,13 +3,24 @@ package gtfs.entities;
 import gtfs.entities.Shape.Point;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.SortedSet;
 import java.util.TreeSet;
+import javax.persistence.Entity;
+import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
+import javax.persistence.OrderBy;
+import javax.persistence.Table;
+import javax.persistence.Transient;
 
 /**
  * A sequence stops.
  * 
  * @see <a href="https://developers.google.com/transit/gtfs/reference/#tripstxt">GTFS Overview - Trip</a>
  */
+@Entity
+@Table(name="trips", schema="gtfs", catalog="postgis_test")
 public class Trip extends GTFS{
     /**
      * The route the trip belongs to.
@@ -29,8 +40,8 @@ public class Trip extends GTFS{
     private Shape shape;
     private Boolean wheelchairAccessible;
     private Boolean bikesAllowed;
-    private TreeSet<StopTime> stopTimes;
-    private TreeSet<Frequency> frequencies;
+    private SortedSet<StopTime> stopTimes;
+    private SortedSet<Frequency> frequencies;
     
     /**
      * The Trip constructor with all the required fields.
@@ -88,12 +99,41 @@ public class Trip extends GTFS{
     public Trip(Route route, Calendar calendar, String id, String headSign, String shortName, int direction, Boolean whAccessible, Boolean bikesAllowed){
         this(route, calendar, id, headSign, shortName, direction, whAccessible, bikesAllowed, null);
     }
+
+    public void setRoute(Route route) {
+        this.route = route;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public void setHeadSign(String headSign) {
+        this.headSign = headSign;
+    }
+
+    public void setDirection(int direction) {
+        this.direction = direction;
+    }
+
+    public void setWheelchairAccessible(Boolean wheelchairAccessible) {
+        this.wheelchairAccessible = wheelchairAccessible;
+    }
+
+    public void setStopTimes(TreeSet<StopTime> stopTimes) {
+        this.stopTimes = stopTimes;
+    }
+
+    public void setFrequencies(SortedSet<Frequency> frequencies) {
+        this.frequencies = frequencies;
+    }
     
     
     /**
      * 
      * @return a read-only ordered view of all the points that form the trip path.
      */
+    @Transient
     public Collection<Point> getPoints(){
         //TODO points in order!!
         //TODO missing shape?
@@ -112,18 +152,49 @@ public class Trip extends GTFS{
         return id.hashCode();
     }
     
+    @Id
     public String getId(){
         return id;
     }
+       
+    @ManyToOne(optional=true)
+    @JoinColumn(name="shape", nullable=true)
+    public Shape getShape(){
+        return shape;
+    }
     
+    @ManyToOne(optional=false)
+    @JoinColumn(name="route", nullable=false)
     public Route getRoute(){
         return route;
     }
 
+    @ManyToOne(optional=false)
+    @JoinColumn(name="calendar", nullable=false)
     public Calendar getCalendar() {
         return calendar;
     }
 
+    /**
+     * 
+     * @return a read-only view of the frequencies of the trip.
+     */
+    @OneToMany(targetEntity=Frequency.class)
+    @OrderBy("start_time ASC")
+    public SortedSet<Frequency> getFrequencies(){
+        return Collections.unmodifiableSortedSet(frequencies);
+    }
+    
+    /**
+     * 
+     * @return a read-only view of the stop times of the trip.
+     */
+    @OneToMany(targetEntity=StopTime.class)
+    @OrderBy()
+    public SortedSet<StopTime> getStopTimes(){
+        return Collections.unmodifiableSortedSet(stopTimes);
+    }
+    
     public String getHeadSign() {
         return headSign;
     }
@@ -134,10 +205,6 @@ public class Trip extends GTFS{
 
     public int getDirection() {
         return direction;
-    }
-
-    public Shape getShape() {
-        return shape;
     }
 
     /**
@@ -178,6 +245,15 @@ public class Trip extends GTFS{
         this.calendar = calendar;
         return oldCalendar;
     }
+
+    public void setShortName(String shortName) {
+        this.shortName = shortName;
+    }
+
+    public void setBikesAllowed(Boolean bikesAllowed) {
+        this.bikesAllowed = bikesAllowed;
+    }
+    
     
     @Override
     public String toString(){
@@ -189,17 +265,12 @@ public class Trip extends GTFS{
         
         return builder.toString();
     }
-    
-    /**
-     * 
-     * @return a read-only view of the stop times of the trip.
-     */
-    public Collection<StopTime> getStopTimes(){
-        return Collections.unmodifiableCollection(stopTimes);
-    }
-    
+        
     /**
      * Same as {@link #addStopTime(gtfs.entities.StopTime, boolean)} with append parameter set to false.
+     * 
+     * @param stopTime The stop time to add. Must be not null. 
+     * @return true if the insert has been successful, false otherwise.
      */
     public boolean addStopTime(StopTime stopTime) {
         return addStopTime(stopTime, false);
@@ -214,7 +285,7 @@ public class Trip extends GTFS{
      */
     public boolean addStopTime(StopTime stopTime, boolean append){
         if(stopTimes==null)
-            stopTimes = new TreeSet<>(StopTime.SEQUENCE_COMPARATOR);
+            setStopTimes(new TreeSet<>(StopTime.SEQUENCE_COMPARATOR));
 
         if(append){
             StopTime last = null;
@@ -235,7 +306,7 @@ public class Trip extends GTFS{
      */
     public boolean addFrequency(Frequency frequency) {
         if(frequencies==null)
-            frequencies = new TreeSet<>((Frequency o1, Frequency o2) -> StopTime.TIME_COMPARATOR.compare(o1.getStartTime(), o2.getStartTime()));
+            setFrequencies(new TreeSet<>((Frequency o1, Frequency o2) -> StopTime.TIME_COMPARATOR.compare(o1.getStartTime(), o2.getStartTime())));
         return frequencies.add(frequency);
     }
 }

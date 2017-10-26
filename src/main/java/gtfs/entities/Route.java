@@ -1,15 +1,25 @@
 package gtfs.entities;
 
 import java.net.URL;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Set;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
+import javax.persistence.Table;
+import javax.persistence.Transient;
 
 /**
  * A group of Trips displayed to user as a single service.
  * 
  * @see <a href="https://developers.google.com/transit/gtfs/reference/#routestxt">GTFS Overview - Route</a>
  */
+@Entity
+@Table(name="routes", schema="gtfs",  catalog="postgis_test")
 public class Route extends GTFS{
     private Agency agency;
     /**
@@ -36,7 +46,7 @@ public class Route extends GTFS{
      */
     private String color = "FFFFFF";
     private String textColor = "000000";
-    private HashSet<Trip> trips;
+    private Set<Trip> trips;
     
     /**
      *
@@ -57,6 +67,8 @@ public class Route extends GTFS{
      * @param longName The long name of the route. It can be null onlt if shortName parameter is not.
      */
     public Route(Agency agency, String id, int type, String shortName, String longName){
+        if(agency==null)
+            throw new IllegalArgumentException("Agency must be not null");
         if(id==null)
             throw new IllegalArgumentException("Id must be not null");
         if(type<0 || type>7)
@@ -67,6 +79,7 @@ public class Route extends GTFS{
         this.type = type;
         this.shortName = shortName;
         this.longName = longName;
+        this.agency = agency;
     }
     
     /**
@@ -107,7 +120,9 @@ public class Route extends GTFS{
         if(agency==null) throw new IllegalArgumentException("Agency must be not null");
         this.agency = agency;
     }
-
+    
+    
+    
     /**
      * Sets the id of the route.
      * The id must be unique in the dataset the route belongs to.
@@ -195,6 +210,10 @@ public class Route extends GTFS{
         this.textColor = textColor;
         return false;
     }
+    
+    public void setTrips(Set<Trip> trips) {
+        this.trips = trips;
+    }
 
     public String getDescription() {
         return description;
@@ -228,10 +247,14 @@ public class Route extends GTFS{
         return id.hashCode();
     }
     
+    @ManyToOne(optional=false)
+    @JoinColumn(name="agency", nullable=false )
     public Agency getAgency(){
         return agency;
     }
     
+    @Id
+    @Column(name="id")
     public String getId(){
         return id;
     }
@@ -248,15 +271,18 @@ public class Route extends GTFS{
      * 
      * @return the read-only view of all the trips belonging to the route.
      */
-    public Collection<Trip> getTrips() {
+    @Transient
+    //@OneToMany(targetEntity=Trip.class)
+    public Set<Trip> getTrips() {
         if(trips==null)
-            trips = new HashSet<>();
-        return Collections.unmodifiableCollection(trips);
+            setTrips(new HashSet<>());
+        return Collections.unmodifiableSet(trips);
     }
     
     /**
      * @return the short name if not null, the long name otherwise.
      */
+    @Transient
     public String getName(){
         return (shortName!=null ? shortName : longName);
     }
@@ -269,11 +295,11 @@ public class Route extends GTFS{
      */
     public boolean addTrip(Trip trip){
         if(trips==null)
-            trips = new HashSet<>();
+            setTrips(new HashSet<>());
         return trips.add(trip);
     }
     
-        @Override
+    @Override
     public String toString(){
         StringBuilder builder = new StringBuilder();
         

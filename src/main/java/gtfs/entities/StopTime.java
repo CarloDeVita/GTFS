@@ -1,13 +1,24 @@
 package gtfs.entities;
 
+import com.vividsolutions.jts.geom.Point;
 import java.util.Comparator;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.Table;
+import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
+import javax.persistence.Transient;
 
 /**
  * The time a vehicle arrives and departs from a stop.
+ * The natural order of the instances is by arrival time.
  * 
  * @see <a href="https://developers.google.com/transit/gtfs/reference/#stop_timestxt">GTFS Overview - Stop Time</a>
  */
-public class StopTime extends GTFS{
+@Entity
+@Table(name="stop_times", schema="gtfs", catalog="postgis_test")
+public class StopTime extends GTFS implements Comparable<StopTime>{
     /**
      * The trip of the stop time.
      */
@@ -27,7 +38,7 @@ public class StopTime extends GTFS{
     /**
      * The sequence number of the stop for the trip.
      */
-    private int sequence;
+    private int sequenceNumber;
     private String headSign;
     private int pickupType;
     private int dropoffType;
@@ -59,7 +70,7 @@ public class StopTime extends GTFS{
     /**
      * Compares two StopTimes by their sequence number.
      */
-    public static final Comparator<StopTime> SEQUENCE_COMPARATOR = (StopTime o1, StopTime o2) -> Integer.compare(o1.sequence, o2.sequence);
+    public static final Comparator<StopTime> SEQUENCE_COMPARATOR = (StopTime o1, StopTime o2) -> Integer.compare(o1.sequenceNumber, o2.sequenceNumber);
     
     /**
      * Checks if a String is a valid value for arrival and departure time fields.
@@ -114,7 +125,7 @@ public class StopTime extends GTFS{
             throw new IllegalArgumentException("Sequence value must non negative");
         this.trip = trip;
         this.stop = stop;
-        this.sequence = sequence;
+        this.sequenceNumber = sequence;
         this.arrival = arrival;
         this.departure = departure;
         this.timepoint = timepoint;
@@ -168,14 +179,18 @@ public class StopTime extends GTFS{
         return departure;
     }
 
-    public int getSequence() {
-        return sequence;
+    @Id
+    public int getSequenceNumber() {
+        return sequenceNumber;
     }
 
     public Double getShapeDistTraveled() {
         return shapeDistTraveled;
     }
 
+    @Id
+    @ManyToOne(optional=false)
+    @JoinColumn(name="trip", nullable=false)
     public Trip getTrip() {
         return trip;
     }
@@ -196,6 +211,7 @@ public class StopTime extends GTFS{
         return dropoffType;
     }
 
+    @Column(name="timepoint")
     public boolean isTimepoint() {
         return timepoint;
     }
@@ -236,8 +252,8 @@ public class StopTime extends GTFS{
         if(departure==null) departure = this.departure;
         if(!isValidTime(arrival) || !isValidTime(departure)) return false;
         if(TIME_COMPARATOR.compare(arrival, departure)>0) return false;
-        this.arrival = arrival;
-        this.departure = departure;
+        this.setArrival(arrival);
+        this.setDeparture(departure);
         return true;
     }
 
@@ -259,8 +275,8 @@ public class StopTime extends GTFS{
         if(timepoint && (arrival==null || departure==null)) return false;
         this.timepoint = timepoint;
         if(!timepoint && removeTimes){
-            this.arrival = null;
-            this.departure = null;
+            this.setArrival(null);
+            this.setDeparture(null);
         }
         return true;
     }
@@ -271,9 +287,9 @@ public class StopTime extends GTFS{
      * @param sequence
      * @return true if the sequence number is set correctly, false if it is a negative number.
      */
-    public boolean setSequence(int sequence) {
-        if(sequence<0) return false;
-        this.sequence = sequence;
+    public boolean setSequence(int sequenceNumber) {
+        if(sequenceNumber<0) return false;
+        this.sequenceNumber = sequenceNumber;
         return true;
     }
     
@@ -285,7 +301,7 @@ public class StopTime extends GTFS{
         builder.append(", StopId = ");
         builder.append(stop.getId());
         builder.append(", Sequence = ");
-        builder.append(sequence);
+        builder.append(sequenceNumber);
         if(arrival!=null){
             builder.append(", Arrival = ");
             builder.append(arrival);
@@ -295,5 +311,21 @@ public class StopTime extends GTFS{
         builder.append(", Timepoint ? ");
         builder.append(timepoint);
         return builder.toString();
+    }
+
+    public void setArrival(String arrival) {
+        //TODO check before departure and not null
+        this.arrival = arrival;
+    }
+
+    public void setDeparture(String departure) {
+        //TODO check after arrival and not null
+        this.departure = departure;
+    }
+    
+
+    @Override
+    public int compareTo(StopTime o) {
+        return ARRIVAL_COMPARATOR.compare(this, o);
     }
 }

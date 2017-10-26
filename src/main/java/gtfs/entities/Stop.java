@@ -1,13 +1,27 @@
 package gtfs.entities;
 
+import com.vividsolutions.jts.geom.Point;
+import com.vividsolutions.jts.geom.Coordinate;
+import com.vividsolutions.jts.geom.GeometryFactory;
+import com.vividsolutions.jts.geom.PrecisionModel;
 import java.net.URL;
+import javax.persistence.Entity;
+import javax.persistence.Id;
+import javax.persistence.OneToOne;
+import javax.persistence.Table;
+import javax.persistence.Transient;
 
 /**
  * A stop or station.
  * 
  * @see <a href="https://developers.google.com/transit/gtfs/reference/#stopstxt">GTFS Overview - Stop</a>
  */
+@Entity
+@Table(name="stops", schema="gtfs", catalog="postgis_test")
 public class Stop extends GTFS{
+    //TODO static or built one every time?
+    private static GeometryFactory factory;
+    private Point coordinate;
     /**
      * The id of the stop.
      */
@@ -18,14 +32,7 @@ public class Stop extends GTFS{
      */
     private String name; //required
     private String description;
-    /**
-     * The WGS84 latitude of the stop.
-     */
-    private double lat; //required
-    /**
-     * The WGS84 longitude of the stop.
-     */
-    private double lon; //required
+
     private URL url;
     private boolean isStation;
     private String timezone;
@@ -75,11 +82,15 @@ public class Stop extends GTFS{
             throw new IllegalArgumentException("Invalid WGS84 latitude value");
         if(lon<-180. || lon>180.)
             throw new IllegalArgumentException("Invalid WGS84 longitude value");
+        if(factory==null){
+            PrecisionModel precision = new PrecisionModel(PrecisionModel.FLOATING);
+            int srid = 4326; //WGS 84
+            factory = new GeometryFactory(precision, srid);
+        }
         
         this.id = id;
         this.name = name;
-        this.lat = lat;
-        this.lon = lon;
+        this.coordinate = factory.createPoint(new Coordinate(lon, lat));
     }
     
     public String getCode() {
@@ -106,6 +117,7 @@ public class Stop extends GTFS{
         return wheelchairBoarding;
     }
 
+    @OneToOne(targetEntity=Stop.class)
     public Stop getParent() {
         return parent;
     }
@@ -146,9 +158,9 @@ public class Stop extends GTFS{
             builder.append(description);
         }
         builder.append(", Latitude : ");
-        builder.append(lat);
+        builder.append(getLat());
         builder.append(", Longitude : ");
-        builder.append(lon);
+        builder.append(getLon());
         if(url!=null){
             builder.append(", URL : ");
             builder.append(url);
@@ -193,15 +205,84 @@ public class Stop extends GTFS{
         return true;
     }
     
+    @Id
     public String getId() {
         return id;
     }
 
+    @Transient
     public double getLat() {
-        return lat;
+        return coordinate.getY();
     }
 
+    @Transient
     public double getLon() {
-        return lon;
+        return coordinate.getX();
     }
+    
+    public Point getCoordinate(){
+        return coordinate;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public void setCode(String code) {
+        this.code = code;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    /**
+     * 
+     * @param lat The latitude to set. Must be a valid WGS-84 projection latitude value.
+     */
+    public void setLat(double lat) {
+        //TODO check param
+        Coordinate coordinate = new Coordinate();
+        coordinate.setOrdinate(Coordinate.X, getLon());
+        coordinate.setOrdinate(Coordinate.Y, lat);
+        this.coordinate = factory.createPoint(coordinate);
+    }
+
+    /**
+     * 
+     * @param lon The longitude to set. Must be a valid WGS-84 projection longitude value.
+     */
+    public void setLon(double lon) {
+        //TODO check param
+        Coordinate coordinate = new Coordinate();
+        coordinate.setOrdinate(Coordinate.Y, getLat());
+        coordinate.setOrdinate(Coordinate.X, lon);
+        this.coordinate = factory.createPoint(coordinate);
+    }
+
+    public void setUrl(URL url) {
+        this.url = url;
+    }
+
+    public void setStation(boolean isStation) {
+        this.isStation = isStation;
+    }
+
+    public void setTimezone(String timezone) {
+        this.timezone = timezone;
+    }
+
+    public void setWheelchairBoarding(Boolean wheelchairBoarding) {
+        this.wheelchairBoarding = wheelchairBoarding;
+    }
+
+    public void setCoordinate(Point coordinate) {
+        this.coordinate = coordinate;
+    }
+    
+    
 }

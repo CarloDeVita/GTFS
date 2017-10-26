@@ -6,6 +6,20 @@ import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
+import javax.persistence.CollectionTable;
+import javax.persistence.ElementCollection;
+import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
+import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.JoinTable;
+import javax.persistence.MapKeyColumn;
+import javax.persistence.MapKeyEnumerated;
+import javax.persistence.MapKeyJoinColumn;
+import javax.persistence.OneToMany;
+import javax.persistence.Table;
+import org.hibernate.annotations.Type;
 
 /**
  * A service availability schedule.
@@ -13,6 +27,8 @@ import java.util.Map;
  * @see <a href="https://developers.google.com/transit/gtfs/reference/#calendartxt">GTFS Overview - Calendar</a>
  * @see <a href="https://developers.google.com/transit/gtfs/reference/#calendar_datestxt">GTFS Overview - Calendar Dates</a>
  */
+@Entity
+@Table(name="calendars", schema="gtfs", catalog="postgis_test")
 public class Calendar extends GTFS{
     private String id;
     private Map<DayOfWeek,Boolean> serviceDays;
@@ -76,21 +92,31 @@ public class Calendar extends GTFS{
         }
     }
 
+    /*@ElementCollection(targetClass=Boolean.class)
+    @MapKeyEnumerated(EnumType.ORDINAL)
+    @OneToMany*/
+    @javax.persistence.Transient
     public Map<DayOfWeek, Boolean> getServiceDays() {
         if(serviceDays == null)
-            serviceDays = new EnumMap<>(DayOfWeek.class);
+            setServiceDays(new EnumMap<>(DayOfWeek.class));
         return Collections.unmodifiableMap(serviceDays);
     }
-    
-    
-    
+
     /**
      * 
      * @return  a read-only map containing specific dates of activity or inactivity.
      */
+    @ElementCollection
+    @OneToMany
+    //TODO
+    @CollectionTable(name="calendar_exceptions")
+    @MapKeyJoinColumn(name = "calendar")
+    /*@JoinTable(name="exceptions", schema="gtfs", catalog="postgis_test",
+            joinColumns=@JoinColumn(name="calendar", nullable=false))
+    //TODO mappa con valore boolean???*/
     public Map<LocalDate, Boolean> getExceptions(){
         if(exceptions==null)
-            exceptions = new HashMap<>();
+            setExceptions(new HashMap<>());
         return Collections.unmodifiableMap(exceptions);
     }
     
@@ -103,10 +129,11 @@ public class Calendar extends GTFS{
      */
     public Boolean setDate(LocalDate date, boolean active){
         if(exceptions==null)
-            exceptions = new HashMap<>();
+            setExceptions(new HashMap<>());
         return exceptions.put(date, active);
     }
     
+    @Id
     public String getId(){
         return id;
     } 
@@ -129,6 +156,26 @@ public class Calendar extends GTFS{
 
     public LocalDate getEndDate() {
         return endDate;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public void setServiceDays(Map<DayOfWeek,Boolean> serviceDays) {
+        this.serviceDays = serviceDays;
+    }
+
+    public void setStartDate(LocalDate startDate) {
+        this.startDate = startDate;
+    }
+
+    public void setEndDate(LocalDate endDate) {
+        this.endDate = endDate;
+    }
+
+    public void setExceptions(Map<LocalDate, Boolean> exceptions) {
+        this.exceptions = exceptions;
     }
     
     @Override

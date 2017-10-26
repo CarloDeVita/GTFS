@@ -1,11 +1,17 @@
 package gtfs.entities;
 
+import javax.persistence.Column;
+import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
+
 /**
  * The frequency of a departure time schedule for a trip.
+ * The natural order of the instances is based on the start time.
  * 
- * @see <a ref="https://developers.google.com/transit/gtfs/reference/#frequenciestxt">GTFS Overview - Frequencies</a>
+ * @see <a href="https://developers.google.com/transit/gtfs/reference/#frequenciestxt">GTFS Overview - Frequencies</a>
  */
-public class Frequency extends GTFS{
+public class Frequency extends GTFS implements Comparable<Frequency>{
     private Trip trip; // required //TODO is the association necessary?
     /**
      * The time when the frequency starts to be considered.
@@ -17,7 +23,7 @@ public class Frequency extends GTFS{
     private String endTime; // required
     /**
      * The seconds between departures.
-     * The trip starts evert startTime + headwaySeconds.
+     * The trip starts every startTime + headwaySeconds.
      */
     private int headwaySeconds; // required
     
@@ -103,10 +109,15 @@ public class Frequency extends GTFS{
         this.exactTime = exactTime;
     }
 
+    @Id
+    @ManyToOne(optional=false)
+    @JoinColumn(name="trip", nullable=false)
     public Trip getTrip() {
         return trip;
     }
 
+    @Id
+    @Column(name="start_time")
     public String getStartTime() {
         return startTime;
     }
@@ -119,6 +130,7 @@ public class Frequency extends GTFS{
         return headwaySeconds;
     }
 
+    @Column(name="exact_time")
     public boolean isExactTime() {
         return exactTime;
     }
@@ -137,5 +149,10 @@ public class Frequency extends GTFS{
         builder.append(",Is exact time ? ");
         builder.append(exactTime);
         return builder.toString();
+    }
+
+    @Override
+    public int compareTo(Frequency o) {
+        return startTime.compareTo(o.startTime);
     }
 }

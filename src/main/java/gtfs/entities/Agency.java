@@ -1,17 +1,24 @@
 package gtfs.entities;
 
+import java.io.Serializable;
 import java.net.URL;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.Id;
+import javax.persistence.OneToMany;
+import javax.persistence.Table;
 
 /**
  * An operator of a public transit network, often a public authority.
  * 
  * @see <a href="https://developers.google.com/transit/gtfs/reference/#agencytxt">GTFS Overview - Agency</a>
  */
-public class Agency extends GTFS{
+@Entity
+@Table(name="agencies", schema="gtfs", catalog="postgis_test")
+public class Agency extends GTFS implements Serializable{
     private String id;
     private String name; //required
     private URL url; // required
@@ -21,6 +28,10 @@ public class Agency extends GTFS{
     private String fareUrl;
     private String email;
     private Set<Route> routes;
+    
+    public Agency(){
+        
+    }
     
     /**
      * The Agency constructor with all the required parameters.
@@ -109,6 +120,8 @@ public class Agency extends GTFS{
         return id;
     }
     
+    @Id
+    @Column(name="name")
     public String getName(){
         return name;
     }
@@ -137,11 +150,48 @@ public class Agency extends GTFS{
         return email;
     }
 
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public void setUrl(URL url) {
+        this.url = url;
+    }
+
+    public void setTimezone(String timezone) {
+        this.timezone = timezone;
+    }
+
+    public void setLang(String lang) {
+        this.lang = lang;
+    }
+
+    public void setPhone(String phone) {
+        this.phone = phone;
+    }
+
+    public void setFareUrl(String fareUrl) {
+        this.fareUrl = fareUrl;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public void setRoutes(Set<Route> routes) {
+        this.routes = routes;
+    }
+
     /**
      * 
      * @return a read-only view of the routes associated with the agency.
      */
-    public Collection<Route> getRoutes() {
-        return Collections.unmodifiableCollection(routes);
+    @OneToMany(targetEntity=Route.class)
+    public Set<Route> getRoutes() {
+        return Collections.unmodifiableSet(routes);
     }
 }
