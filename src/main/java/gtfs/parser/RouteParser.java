@@ -18,11 +18,10 @@ public class RouteParser extends GTFSParser<Route>{
     private Agency uniqueAgency;
     
     /**
-     * //TODO
      * Adds the agencies to the parser.
      * <p>These agencies are used to check the references in agency_id column
      * and to bind the route with the corresponding Agency.</p>
-     * <p>Only one agency without id can be added, otherwise a RuntimeException will be thrown.</p>
+     * <p>Only one agency without id can be added, otherwise a GTFSParsingException will be thrown.</p>
      * 
      * @param aCollection The agencies to add. Must be not null.
      * @return false if there is an agency
@@ -120,29 +119,29 @@ public class RouteParser extends GTFSParser<Route>{
         
         // check required field
         if(id==null || (shortName==null && longName==null) || typeString==null)
-            throw new RuntimeException("Missing required value");
+            throw new GTFSParsingException("Missing required value");
         
         // get and check the agency
         Agency agency = null;
         if(agencyId==null){
             if(uniqueAgency==null)
-                throw new RuntimeException();
+                throw new GTFSParsingException("Missinng agency id, but more than one agency in the feed");
             agency = uniqueAgency;
         }
         else
             agency = agencies.get(agencyId);
         if(agency==null)
-            throw new RuntimeException("Missing agency "+ agencyId);
+            throw new GTFSParsingException("Missing agency "+ agencyId);
         
         // get and check the type
         int type;
         try{
             type = Integer.parseInt(typeString);
         }catch(NumberFormatException e){
-            throw new RuntimeException("Invalid type");
+            throw new GTFSParsingException("Invalid type "+typeString);
         }
-        if(type<0 || type>7)
-            throw new RuntimeException("Type must be >=0 and <=7");
+        if(!Route.isValidType(type))
+            throw new GTFSParsingException("Bad type value "+type);
         
         // get and check the url
         URL url = null;
@@ -150,7 +149,7 @@ public class RouteParser extends GTFSParser<Route>{
             try {
                 url = new URL(urlString);
             } catch (MalformedURLException ex) {
-                throw new RuntimeException("MalformedUrl");
+                throw new GTFSParsingException("Malformed Url "+urlString);
             }
         }
         
@@ -159,7 +158,7 @@ public class RouteParser extends GTFSParser<Route>{
             if(color.isEmpty())
                 color = null;
             else if(!Route.checkColor(color))
-                throw new RuntimeException("Invalid color value");
+                throw new GTFSParsingException("Invalid color value : "+color);
         }
         
         // get and check the color
@@ -167,14 +166,13 @@ public class RouteParser extends GTFSParser<Route>{
             if(textColor.isEmpty())
                 textColor = null;
             else if(!Route.checkColor(textColor))
-                throw new RuntimeException("Invalid text color");
+                throw new GTFSParsingException("Invalid text color : "+textColor);
         }
         
         // create and add the route
         Route r = new Route(agency, id, type, shortName, longName, desc, url, color, textColor);
-        if(!result.add(r))
-            throw new RuntimeException("Multiple equal routes");
         agency.addRoute(r);
+        result.add(r);
     }
     
 }

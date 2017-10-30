@@ -12,6 +12,8 @@ import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
 import javax.persistence.Transient;
+import org.hibernate.annotations.Cascade;
+import org.hibernate.annotations.CascadeType;
 
 /**
  * A group of Trips displayed to user as a single service.
@@ -19,7 +21,7 @@ import javax.persistence.Transient;
  * @see <a href="https://developers.google.com/transit/gtfs/reference/#routestxt">GTFS Overview - Route</a>
  */
 @Entity
-@Table(name="routes", schema="gtfs",  catalog="postgis_test")
+@Table(name="routes", schema="gtfs")
 public class Route extends GTFS{
     private Agency agency;
     /**
@@ -39,7 +41,7 @@ public class Route extends GTFS{
      * Describes the type of transportation used on the route.
      * It must be a value between 0 and 7, as indicated in GTFS specifications.
      */
-    private int type; //required
+    private byte type; //required
     private URL url;
     /**
      * 
@@ -58,6 +60,15 @@ public class Route extends GTFS{
     }
     
     /**
+     * 
+     * @param type
+     * @return true if type is in the range of admitted values [0..7], false otherwise.
+     */
+    public static boolean isValidType(int type){
+        return (type>=0 && type<=7);
+    }
+    
+    /**
      * A route constructor with the required fields only.
      * 
      * @param agency The agency the route belongs to. Must be not null.
@@ -71,12 +82,12 @@ public class Route extends GTFS{
             throw new IllegalArgumentException("Agency must be not null");
         if(id==null)
             throw new IllegalArgumentException("Id must be not null");
-        if(type<0 || type>7)
+        if(!isValidType(type))
             throw new IllegalArgumentException("Type must be between 0 and 7");
         if(shortName==null && longName==null)
             throw new IllegalArgumentException("One of shortName or longName must be not null");
         this.id = id;
-        this.type = type;
+        this.type = (byte)type;
         this.shortName = shortName;
         this.longName = longName;
         this.agency = agency;
@@ -173,8 +184,8 @@ public class Route extends GTFS{
      * @return  true if type set correctly, false if it's not a valid value.
      */
     public boolean setType(int type) {
-        if(type<0 || type>7) return false;
-        this.type = type;
+        if(!isValidType(type)) return false;
+        this.type = (byte) type;
         return true;
     }
 
@@ -237,6 +248,7 @@ public class Route extends GTFS{
     
     @Override
     public boolean equals(Object o){
+        if(this==o) return true;
         if(!(o instanceof Route)) return false;
         Route r = (Route) o;
         return id.equals(r.id);
@@ -248,7 +260,8 @@ public class Route extends GTFS{
     }
     
     @ManyToOne(optional=false)
-    @JoinColumn(name="agency", nullable=false )
+    @JoinColumn(name="agency", nullable=false)
+    @Cascade(value={CascadeType.SAVE_UPDATE})
     public Agency getAgency(){
         return agency;
     }
@@ -271,8 +284,8 @@ public class Route extends GTFS{
      * 
      * @return the read-only view of all the trips belonging to the route.
      */
-    @Transient
-    //@OneToMany(targetEntity=Trip.class)
+    @OneToMany(targetEntity=Trip.class, mappedBy="route")
+    @Cascade(value={CascadeType.DELETE})
     public Set<Trip> getTrips() {
         if(trips==null)
             setTrips(new HashSet<>());

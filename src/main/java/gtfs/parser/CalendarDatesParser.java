@@ -1,7 +1,6 @@
 package gtfs.parser;
 
 import gtfs.entities.Calendar;
-import java.time.DateTimeException;
 import java.time.LocalDate;
 import java.util.Collection;
 import java.util.HashMap;
@@ -58,7 +57,7 @@ public class CalendarDatesParser extends GTFSParser<Calendar>{
         String excType = parameters[2];
         
         if(id == null || dateString == null || excType == null)
-            throw new RuntimeException("Missing required values");
+            throw new GTFSParsingException("Missing required values");
         
         // get and check the date
         LocalDate date = CalendarFileParser.createDateFromGTFS(dateString);
@@ -69,10 +68,10 @@ public class CalendarDatesParser extends GTFSParser<Calendar>{
             exception = Integer.parseInt(excType);
         }
         catch(NumberFormatException ex){
-            throw new RuntimeException("Invalid exception type value : "+excType);
+            throw new GTFSParsingException("Invalid exception type value : "+excType);
         }
         if(exception < 1 || exception > 2)
-            throw new RuntimeException("Invalid exception type value : "+excType);//todo
+            throw new GTFSParsingException("Invalid exception type value : "+excType);//todo
         Boolean exceptionType = (exception==1);
         
         // if the calendar specified in the id field

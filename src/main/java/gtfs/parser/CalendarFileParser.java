@@ -46,7 +46,7 @@ public class CalendarFileParser extends GTFSParser<Calendar>{
         // All parameters are required
         for(String s : parameters)
             if(s==null)
-                throw new RuntimeException("Missing required value");
+                throw new GTFSParsingException("Missing required value");
         
         String id = parameters[0];
         String monday = parameters[1];
@@ -62,8 +62,8 @@ public class CalendarFileParser extends GTFSParser<Calendar>{
         // get and checks the dates
         LocalDate startDate = createDateFromGTFS(sDate);
         LocalDate endDate = createDateFromGTFS(eDate);
-        if(startDate.compareTo(endDate) > 0)
-            throw new RuntimeException("Start date comes after the end date");
+        if(startDate.isAfter(endDate))
+            throw new GTFSParsingException("Start date comes after the end date");
         
         // get the association day -> activity status
         Map<DayOfWeek,Boolean> days = new EnumMap<>(DayOfWeek.class); 
@@ -71,13 +71,13 @@ public class CalendarFileParser extends GTFSParser<Calendar>{
             try{
                 int activeValue = Integer.parseInt(parameters[i+1]);
                 if(activeValue < 0 && activeValue > 1)
-                    throw new RuntimeException("Day activity value must be a integer");       
+                    throw new GTFSParsingException("Invalid value \""+parameters[i+1]+"\" for "+DayOfWeek.of(i));
                 DayOfWeek day = DayOfWeek.of(i);
                 Boolean active = (activeValue==1);
                 days.put(DayOfWeek.of(i), active);
             }
             catch(NumberFormatException ex){
-                throw new RuntimeException("Value must be 0 or 1");
+                throw new GTFSParsingException("Invalid value \""+parameters[i+1]+"\" for "+DayOfWeek.of(i));
             }
         }
         
@@ -94,20 +94,20 @@ public class CalendarFileParser extends GTFSParser<Calendar>{
     /**
      * Parses a date from the calendar dates file column
      * 
-     * @param GTFSdate The string from the date column. Must be not null. If the string is an invalid date value, throws a RuntimeException.
+     * @param dateString The string from the date column. Must be not null. If the string is an invalid date value, throws a GTFSParsingException.
      * @return The date parsed.
      */
-    static LocalDate createDateFromGTFS(String GTFSdate){
+    static LocalDate createDateFromGTFS(String dateString){
         LocalDate date = null;
         try{
             int day,month,year;
-            year = Integer.parseInt(GTFSdate.substring(0,4));
-            month = Integer.parseInt(GTFSdate.substring(4,6));
-            day = Integer.parseInt(GTFSdate.substring(6,8));
+            year = Integer.parseInt(dateString.substring(0,4));
+            month = Integer.parseInt(dateString.substring(4,6));
+            day = Integer.parseInt(dateString.substring(6,8));
             date = LocalDate.of(year, month, day);
         }
         catch(NumberFormatException | DateTimeException ex){
-            throw new RuntimeException("Invalid date.");
+            throw new GTFSParsingException("Invalid date "+dateString);
         }
         return date;
     }

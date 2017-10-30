@@ -119,16 +119,16 @@ public class StopTimeParser extends GTFSParser<StopTime>{
         
         // check required values
         if(tripId==null || stopId==null || sequenceString==null)
-            throw new RuntimeException("Missing required value");
+            throw new GTFSParsingException("Missing required value");
         
         if(lastTrip!=null && !tripId.equals(lastTrip)) // reset sequence number
             lastSequence = -1;
         
         // get and check trip and stop
         Trip trip = trips.get(tripId);
-        if(trip==null) throw new RuntimeException("Missing trip "+tripId);
+        if(trip==null) throw new GTFSParsingException("Missing trip "+tripId);
         Stop stop = stops.get(stopId);
-        if(stop==null) throw new RuntimeException("Missing stop "+stopId);
+        if(stop==null) throw new GTFSParsingException("Missing stop "+stopId);
         
         
         // get and check sequence number value
@@ -136,12 +136,12 @@ public class StopTimeParser extends GTFSParser<StopTime>{
         int sequence;
         try{
             sequence = Integer.parseInt(sequenceString);
-            if(sequence<0) throw new RuntimeException("Bad sequence value");
+            if(sequence<0) throw new GTFSParsingException("Bad sequence value "+sequenceString);
         }catch(NumberFormatException e){
-            throw new RuntimeException("Bad sequence value");
+            throw new GTFSParsingException("Bad sequence value "+sequenceString);
         }
         if(lastSequence!=-1 && sequence<=lastSequence)
-            throw new RuntimeException("Sequence number must increase");
+            throw new GTFSParsingException("Sequence number must increase");
         
         // get and check pickup type value
         int pickup = 0;
@@ -149,9 +149,9 @@ public class StopTimeParser extends GTFSParser<StopTime>{
             try{
                 pickup = Integer.parseInt(pickupString);
                 if(!StopTime.isValidPickupType(pickup))
-                    throw new RuntimeException("Pickup value "+pickup+" not in range");
+                    throw new GTFSParsingException("Pickup value "+pickup+" not in range");
             }catch(NumberFormatException e){
-                throw new RuntimeException("Bad pickup type value" + pickupString);
+                throw new GTFSParsingException("Bad pickup type value" + pickupString);
             }
         }
         
@@ -161,9 +161,9 @@ public class StopTimeParser extends GTFSParser<StopTime>{
             try{
                 dropoff = Integer.parseInt(dropoffString);
                 if(!StopTime.isValidDropoffType(dropoff))
-                    throw new RuntimeException("Dropoff value "+pickup+" not in range");
+                    throw new GTFSParsingException("Dropoff value "+dropoff+" not in range");
             }catch(NumberFormatException e){
-                throw new RuntimeException("Bad dropoff type value" + pickupString);
+                throw new GTFSParsingException("Bad dropoff type value" + dropoffString);
             }
         }
         
@@ -174,16 +174,16 @@ public class StopTimeParser extends GTFSParser<StopTime>{
             if(timepointString.equals("0"))
                 timepoint = false;
             else if(!timepointString.equals("1"))
-                throw new RuntimeException("Bad timepoint value : "+ timepointString);
+                throw new GTFSParsingException("Bad timepoint value : "+ timepointString);
         }
         if(timepoint && (arrivalString==null || departureString==null))
-            throw new RuntimeException("Timepoint missing arrival or departure time");
+            throw new GTFSParsingException("Timepoint missing arrival or departure time");
         
         // check arrival and departure values
         if(arrivalString!=null && !StopTime.isValidTime(arrivalString))
-            throw new RuntimeException("Bad arrival time value : "+arrivalString);
+            throw new GTFSParsingException("Bad arrival time value : "+arrivalString);
         if(departureString!=null && !StopTime.isValidTime(departureString))
-            throw new RuntimeException("Bad departure time value : "+departureString);
+            throw new GTFSParsingException("Bad departure time value : "+departureString);
         
         // get and check distance value
         Double distance = null;
@@ -191,9 +191,9 @@ public class StopTimeParser extends GTFSParser<StopTime>{
             try{
                 distance = Double.parseDouble(distString);
                 if(distance<0.)
-                    throw new RuntimeException("Bad distance value : "+ distance);
+                    throw new GTFSParsingException("Bad distance value : "+ distance);
             }catch(NumberFormatException e){
-                throw new RuntimeException("Bad distance value : "+ distString);
+                throw new GTFSParsingException("Bad distance value : "+ distString);
             }
         }
         

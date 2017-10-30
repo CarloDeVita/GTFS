@@ -14,10 +14,11 @@ public class CalendarParser {
      * 
      * @param directory The directory of the GTFS feed. Must be not null.
      * @return a collection containing all the calendars parsed.
-     * @throws 
-     * @throws IOException if the parsing produces an IOException for both files.
+     * @throws GTFSParsingException if a parsing error occurs.
+     * @throws FileNotFoundException if both files are missing.
+     * @throws IOException if the parsing produces an IOException for one of the files.
      */
-    public Collection<Calendar> read(String directory) throws IOException{
+    public Collection<Calendar> read(String directory) throws FileNotFoundException, IOException{
         Collection<Calendar> calendars = null, calendars2 = null;
         FileNotFoundException ex = null;
         
@@ -44,7 +45,7 @@ public class CalendarParser {
         else
             calendars = calendars2;
       
-        // both file produced an exception
+        // both files were not found
         if(calendars==null) throw ex;
         
         return calendars;

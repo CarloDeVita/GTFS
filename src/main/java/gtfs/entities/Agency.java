@@ -5,11 +5,13 @@ import java.net.URL;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import org.hibernate.annotations.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
+import org.hibernate.annotations.Cascade;
 
 /**
  * An operator of a public transit network, often a public authority.
@@ -17,7 +19,7 @@ import javax.persistence.Table;
  * @see <a href="https://developers.google.com/transit/gtfs/reference/#agencytxt">GTFS Overview - Agency</a>
  */
 @Entity
-@Table(name="agencies", schema="gtfs", catalog="postgis_test")
+@Table(name="agencies", schema="gtfs")
 public class Agency extends GTFS implements Serializable{
     private String id;
     private String name; //required
@@ -29,9 +31,7 @@ public class Agency extends GTFS implements Serializable{
     private String email;
     private Set<Route> routes;
     
-    public Agency(){
-        
-    }
+    public Agency(){}
     
     /**
      * The Agency constructor with all the required parameters.
@@ -190,7 +190,8 @@ public class Agency extends GTFS implements Serializable{
      * 
      * @return a read-only view of the routes associated with the agency.
      */
-    @OneToMany(targetEntity=Route.class)
+    @OneToMany(targetEntity=Route.class, mappedBy="agency")
+    @Cascade(value={CascadeType.DELETE})
     public Set<Route> getRoutes() {
         return Collections.unmodifiableSet(routes);
     }

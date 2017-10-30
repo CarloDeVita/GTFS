@@ -14,7 +14,8 @@ import org.apache.commons.io.input.BOMInputStream;
 
 
 /**
- * A GTFS entity parser using Template Method pattern.
+ * A GTFS entity parser.
+ * Uses Template Method pattern.
  * 
  * @param <T> the GTFS entity class.
  */
@@ -35,13 +36,13 @@ public abstract class GTFSParser<T extends GTFS> {
      * 
      * @param dirpath The directory path of the GTFS feed. Must be not null.
      * @return a Collection of entities from the feed
-     * @throws RuntimeException if {@link #isReady()} returns false;
+     * @throws GTFSParsingException if {@link #isReady()} returns false or a parsing error is found;
      * @throws FileNotFoundException if the directory does not contain the GTFS file specified in method getFileName
      * @throws IOException if an error occurs during file reading
      */
     public Collection<T> parse(String dirpath) throws FileNotFoundException, IOException{
         if(!isReady())
-            throw new RuntimeException("Parser not ready"); //TODO custom exception?
+            throw new GTFSParsingException("Parser not ready"); //TODO custom exception?
         Collection<T> result = new HashSet<>();
         // build file path
         if(dirpath.charAt(dirpath.length()-1)!='/') dirpath += "/";
@@ -67,13 +68,13 @@ public abstract class GTFSParser<T extends GTFS> {
             for(String s : line.split(",")){
                 int p = columnToParameter(s);
                 if(p==-1) // unknown column
-                    throw new RuntimeException(String.format("Unexpected column \"%s\"", s));
+                    throw new GTFSParsingException(String.format("Unexpected column \"%s\"", s));
                 columnToParameter[i++] = p;
             }
             
             // check if all required fields have been found
             if(!checkRequired(firstRow))
-                throw new RuntimeException("Required columns missing");
+                throw new GTFSParsingException("Missing required columns");
             
             // read all the lines
             while((line = reader.readLine())!=null){
@@ -88,9 +89,9 @@ public abstract class GTFSParser<T extends GTFS> {
 
                 // check the number of fields of the row
                 if(token.length<columnsFound)
-                    throw new RuntimeException("Too few columns at line "+rowCount);
+                    throw new GTFSParsingException("Too few columns at line "+rowCount);
                 if(token.length>columnsFound)
-                    throw new RuntimeException("Too many columns "+Arrays.toString(token)+" at line "+rowCount);
+                    throw new GTFSParsingException("Too many columns at line "+rowCount);
                 
                 // fill the fields array using the right order of the parameters
                 Arrays.fill(row, null);
@@ -101,13 +102,15 @@ public abstract class GTFSParser<T extends GTFS> {
                 }
                 
                 // processe the row
-                processRow(row, result);                
+                try{
+                    processRow(row, result);
+                }catch(RuntimeException e){
+                    throw new GTFSParsingException("Parsing exception at line "+rowCount, e);
+                }
             }
+        }catch(FileNotFoundException e){
+            throw new FileNotFoundException(e.getMessage()+": "+path);
         }
-        
-        // check if the dataset is not empty
-        if(rowCount<=1)
-            throw new RuntimeException("Empty dataset");
         
         clear();
         return result;

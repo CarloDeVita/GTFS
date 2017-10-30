@@ -124,20 +124,20 @@ public class TripParser extends GTFSParser<Trip> {
         
         // check required values
         if(routeString==null || calendarId==null || id==null)
-            throw new RuntimeException("Missing required value");
+            throw new GTFSParsingException("Missing required value");
         
         // get and check the route
         Route route = routes.get(routeString);
-        if(route==null) throw new RuntimeException("Missing route : " + routeString);
+        if(route==null) throw new GTFSParsingException("Missing route : " + routeString);
         // get and check the calendar
         Calendar calendar = calendars.get(calendarId);
-        if(calendar==null) throw new RuntimeException("Missing calendar : " + calendarId);
+        if(calendar==null) throw new GTFSParsingException("Missing calendar : " + calendarId);
         
         // get and check the shape
         Shape shape = null;
         if(shapeId!=null){
             shape = shapes.get(shapeId);
-            if(shape==null) throw new RuntimeException("Missing shape : " + shapeId);
+            if(shape==null) throw new GTFSParsingException("Missing shape : " + shapeId);
         }
         
         // get and check wheelchair allowed value
@@ -148,7 +148,7 @@ public class TripParser extends GTFSParser<Trip> {
             else if(wheelchair.equals("2"))
                 wheelchairAllowed = false;
             else
-                throw new RuntimeException("Bad wheelchair allowed value : "+wheelchair);
+                throw new GTFSParsingException("Bad wheelchair allowed value : "+wheelchair);
         }
         
         // get and check bikes allowed value
@@ -159,7 +159,7 @@ public class TripParser extends GTFSParser<Trip> {
             else if(bikes.equals("2"))
                 bikesAllowed = false;
             else
-                throw new RuntimeException("Bad bikes allowed value : "+bikes);        
+                throw new GTFSParsingException("Bad bikes allowed value : "+bikes);        
         }
         
         // get and check direction value
@@ -168,10 +168,10 @@ public class TripParser extends GTFSParser<Trip> {
             try{
                 direction = Integer.parseInt(directionString);
             } catch(NumberFormatException e){
-                throw new RuntimeException("Bad direction value : "+directionString);
+                throw new GTFSParsingException("Bad direction value : "+directionString);
             }
-            if(direction!=0 && direction!=1)
-                throw new RuntimeException("Bad direction value : "+direction);
+            if(!Trip.isValidDirection(direction))
+                throw new GTFSParsingException("Bad direction value : "+direction);
         }
         
         // create and add the trip

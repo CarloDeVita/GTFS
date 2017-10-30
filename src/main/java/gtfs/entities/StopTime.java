@@ -1,47 +1,46 @@
 package gtfs.entities;
 
-import com.vividsolutions.jts.geom.Point;
 import java.util.Comparator;
+import org.hibernate.annotations.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Table;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
-import javax.persistence.Transient;
+import org.hibernate.annotations.Cascade;
 
 /**
  * The time a vehicle arrives and departs from a stop.
- * The natural order of the instances is by arrival time.
  * 
  * @see <a href="https://developers.google.com/transit/gtfs/reference/#stop_timestxt">GTFS Overview - Stop Time</a>
  */
 @Entity
-@Table(name="stop_times", schema="gtfs", catalog="postgis_test")
-public class StopTime extends GTFS implements Comparable<StopTime>{
+@Table(name="stop_times", schema="gtfs")
+public class StopTime extends GTFS implements java.io.Serializable{
     /**
      * The trip of the stop time.
      */
-    private Trip trip;
+    private Trip trip; // required
     /**
      * The stop the vehicle stops in.
      */
-    private Stop stop;
+    private Stop stop; // required
     /**
      * The arrival time of the vehicle at the stop.
      */
-    private String arrival;
+    private String arrival; // required 
     /**
      * The departure time of the veichle from the stop.
      */
-    private String departure;
+    private String departure; // required
     /**
      * The sequence number of the stop for the trip.
      */
-    private int sequenceNumber;
+    private int sequenceNumber; // required
     private String headSign;
-    private int pickupType;
-    private int dropoffType;
+    private byte pickupType;
+    private byte dropoffType;
     private Double shapeDistTraveled;
     /**
      * Tells wether the departure time is strictly adhered to by the vehicle.
@@ -60,17 +59,17 @@ public class StopTime extends GTFS implements Comparable<StopTime>{
     /**
      * Compares two StopTimes by their arrival time.
      */
-    public static final Comparator<StopTime> ARRIVAL_COMPARATOR = (StopTime o1, StopTime o2) -> TIME_COMPARATOR.compare(o1.arrival, o2.arrival);
+    public static final Comparator<StopTime> ARRIVAL_COMPARATOR = new ArrivalComparator();
     
     /**
      * Compares two StopTimes by their departure time.
      */
-    public static final Comparator<StopTime> DEPARTURE_COMPARATOR = (StopTime o1, StopTime o2) -> TIME_COMPARATOR.compare(o1.departure, o2.departure);
+    public static final Comparator<StopTime> DEPARTURE_COMPARATOR = new DepartureComparator();
     
     /**
      * Compares two StopTimes by their sequence number.
      */
-    public static final Comparator<StopTime> SEQUENCE_COMPARATOR = (StopTime o1, StopTime o2) -> Integer.compare(o1.sequenceNumber, o2.sequenceNumber);
+    public static final Comparator<StopTime> SEQUENCE_COMPARATOR = new SequenceComparator();
     
     /**
      * Checks if a String is a valid value for arrival and departure time fields.
@@ -165,9 +164,13 @@ public class StopTime extends GTFS implements Comparable<StopTime>{
      */
     public StopTime(Trip trip, Stop stop, int sequence, String arrival, String departure, String headSign, int pickup, int dropoff, boolean timepoint, Double shapeDistTraveled){
         this(trip, stop, sequence, arrival, departure, timepoint);
+        if(!isValidDropoffType(dropoff))
+            throw new IllegalArgumentException("Dropoff type value "+dropoff+" not in valid range");
+        if(!isValidPickupType(pickup))
+            throw new IllegalArgumentException("Pickup type value"+pickup+" not in valid range");
         this.headSign = headSign;
-        this.pickupType = pickup;
-        this.dropoffType = dropoff;
+        this.pickupType = (byte)pickup;
+        this.dropoffType = (byte)dropoff;
         this.shapeDistTraveled = shapeDistTraveled;
     }
 
@@ -179,11 +182,6 @@ public class StopTime extends GTFS implements Comparable<StopTime>{
         return departure;
     }
 
-    @Id
-    public int getSequenceNumber() {
-        return sequenceNumber;
-    }
-
     public Double getShapeDistTraveled() {
         return shapeDistTraveled;
     }
@@ -191,10 +189,19 @@ public class StopTime extends GTFS implements Comparable<StopTime>{
     @Id
     @ManyToOne(optional=false)
     @JoinColumn(name="trip", nullable=false)
+    @Cascade(value={CascadeType.SAVE_UPDATE})
     public Trip getTrip() {
         return trip;
     }
 
+    @Id
+    public int getSequenceNumber() {
+        return sequenceNumber;
+    }
+    
+    @ManyToOne(optional=false)
+    @JoinColumn(name="stop", nullable=false)
+    @Cascade(value={CascadeType.SAVE_UPDATE})
     public Stop getStop() {
         return stop;
     }
@@ -243,8 +250,8 @@ public class StopTime extends GTFS implements Comparable<StopTime>{
     /**
      * Sets the arrival and departure times of the vehicle.
      * 
-     * @param arrival The arrival time of the vehicle. If null it is replaced with the current arrival time of the instance.
-     * @param departure The departure time of the vehicle. If null it is replaced with the current departure time of the instance. Departure time must come after the arrival time.
+     * @param arrival The arrival time of the vehicle. Null is replaced with the current arrival time of the instance.
+     * @param departure The departure time of the vehicle. Null is replaced with the current departure time of the instance. Departure time must come after the arrival time.
      * @return true if the parameters respect the specifications, false otherwise.
      */
     public boolean setTimes(String arrival, String departure){
@@ -287,7 +294,7 @@ public class StopTime extends GTFS implements Comparable<StopTime>{
      * @param sequence
      * @return true if the sequence number is set correctly, false if it is a negative number.
      */
-    public boolean setSequence(int sequenceNumber) {
+    public boolean setSequenceNumber(int sequenceNumber) {
         if(sequenceNumber<0) return false;
         this.sequenceNumber = sequenceNumber;
         return true;
@@ -313,19 +320,87 @@ public class StopTime extends GTFS implements Comparable<StopTime>{
         return builder.toString();
     }
 
-    public void setArrival(String arrival) {
-        //TODO check before departure and not null
+    /**
+     * 
+     * @param arrival the arrival time to the stop. Null returns false.
+     * @return true if the arrival time has been properly set, false if the arrival parameter is after the current departure time.
+     */
+    public boolean setArrival(String arrival) {
+        if(arrival==null) return false;
+        if(StopTime.TIME_COMPARATOR.compare(this.departure, arrival)<0)
+            return false;
         this.arrival = arrival;
+        return false;
     }
 
-    public void setDeparture(String departure) {
-        //TODO check after arrival and not null
+    /**
+     * 
+     * @param departure the departure time from the stop. Null returns false.
+     * @return true if the departure time has been properly set, false if departure parameter is before the current arrival time.
+     */
+    public boolean setDeparture(String departure) {
+        if(departure==null) return false;
+        if(StopTime.TIME_COMPARATOR.compare(this.arrival, departure)>0)
+            return false;
         this.departure = departure;
+        return true;
+    }
+
+    /**
+     * 
+     * @param dropoffType
+     * @return true if the parameter is valid according to {@link #isValidDropoffType(int)}, false otherwise.
+     */
+    public boolean setDropoffType(int dropoffType) {
+        if(!isValidDropoffType(dropoffType)) return false;
+        this.dropoffType = (byte)dropoffType;
+        return true;
+    }
+
+    /**
+     * 
+     * @param pickupType 
+     * @return true if the parameter is valid according to {@link #isValidPickupType(int)}, false otherwise.
+     */
+    public boolean setPickupType(int pickupType) {
+        if(!isValidPickupType(pickupType)) return false;
+        this.pickupType = (byte)pickupType;
+        return true;
+    }
+
+    public void setHeadSign(String headSign) {
+        this.headSign = headSign;
+    }
+
+    /**
+     * 
+     * @param shapeDistTraveled the distance from the first shape point. Less than 0 returns false. Null admitted.
+     * @return true if the property has been correctly set, false otherwise.
+     */
+    public boolean setShapeDistTraveled(Double shapeDistTraveled) {
+        if(shapeDistTraveled!=null && shapeDistTraveled<0) return false;
+        this.shapeDistTraveled = shapeDistTraveled;
+        return true;
     }
     
-
-    @Override
-    public int compareTo(StopTime o) {
-        return ARRIVAL_COMPARATOR.compare(this, o);
+    public static class SequenceComparator implements Comparator<StopTime>{
+        @Override
+        public int compare(StopTime o1, StopTime o2) {
+            return Integer.compare(o1.sequenceNumber, o2.sequenceNumber);
+        }
+    }
+    
+    public static class ArrivalComparator implements Comparator<StopTime>{
+        @Override
+        public int compare(StopTime o1, StopTime o2) {
+            return TIME_COMPARATOR.compare(o1.arrival, o2.arrival);
+        }
+    }
+    
+    public static class DepartureComparator implements Comparator<StopTime>{
+        @Override
+        public int compare(StopTime o1, StopTime o2) {
+            return TIME_COMPARATOR.compare(o1.departure, o2.departure);
+        }
     }
 }

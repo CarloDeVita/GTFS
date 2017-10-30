@@ -7,9 +7,12 @@ import com.vividsolutions.jts.geom.PrecisionModel;
 import java.net.URL;
 import javax.persistence.Entity;
 import javax.persistence.Id;
+import javax.persistence.JoinColumn;
 import javax.persistence.OneToOne;
 import javax.persistence.Table;
 import javax.persistence.Transient;
+import org.hibernate.annotations.Cascade;
+import org.hibernate.annotations.CascadeType;
 
 /**
  * A stop or station.
@@ -17,11 +20,12 @@ import javax.persistence.Transient;
  * @see <a href="https://developers.google.com/transit/gtfs/reference/#stopstxt">GTFS Overview - Stop</a>
  */
 @Entity
-@Table(name="stops", schema="gtfs", catalog="postgis_test")
+@Table(name="stops", schema="gtfs")
 public class Stop extends GTFS{
     //TODO static or built one every time?
     private static GeometryFactory factory;
-    private Point coordinate;
+    
+    private Point coordinate; // required
     /**
      * The id of the stop.
      */
@@ -36,8 +40,15 @@ public class Stop extends GTFS{
     private URL url;
     private boolean isStation;
     private String timezone;
-    private Boolean wheelchairBoarding;
+    private byte wheelchairBoarding;
     private Stop parent;
+    
+    
+    private static byte booleanToByte(Boolean wheelchair){
+        if(wheelchair==null) return -1;
+        if(wheelchair) return 0;
+        return 1;
+    }
     
     /**
      * The Stop constructor with all the possibile parameters.
@@ -60,7 +71,7 @@ public class Stop extends GTFS{
         this.description = description;
         this.url = url;
         this.isStation = isStation;
-        this.wheelchairBoarding = whBoarding;
+        this.wheelchairBoarding = booleanToByte(whBoarding);
         this.parent = parent;
         this.timezone = timezone;
     }
@@ -114,10 +125,14 @@ public class Stop extends GTFS{
      * @return null if there are no information about the wheelchair boarding, otherwise if wheelchairs can board on the vehicle.
      */
     public Boolean getWheelchairBoarding() {
-        return wheelchairBoarding;
+        if(wheelchairBoarding==-1) return null;
+        if(wheelchairBoarding==0) return Boolean.FALSE;
+        return Boolean.TRUE;
     }
 
     @OneToOne(targetEntity=Stop.class)
+    @JoinColumn(name="parent_id", nullable=true)
+    @Cascade(value={CascadeType.SAVE_UPDATE})
     public Stop getParent() {
         return parent;
     }
@@ -137,6 +152,7 @@ public class Stop extends GTFS{
 
     @Override
     public boolean equals(Object o) {
+        if(this==o) return true;
         if(!(o instanceof Stop)) return false;
         Stop s = (Stop) o;
         return id.equals(s.id);
@@ -176,9 +192,9 @@ public class Stop extends GTFS{
             builder.append(", Timezone : ");
             builder.append(getTimezone());
         }
-        if(wheelchairBoarding!=null){
+        if(getWheelchairBoarding()!=null){
             builder.append(", Wheelchair boarding ? ");
-            builder.append(wheelchairBoarding);
+            builder.append(getWheelchairBoarding());
         }
         return builder.toString();
     }
@@ -242,26 +258,30 @@ public class Stop extends GTFS{
 
     /**
      * 
-     * @param lat The latitude to set. Must be a valid WGS-84 projection latitude value.
+     * @param lat The latitude to set.
+     * @return true if the latitude is a valid WGS-84 projection value and has been correctly set, false otherwise.
      */
-    public void setLat(double lat) {
-        //TODO check param
+    public boolean setLat(double lat) {
+        if(lat<-90. || lat>90.) return false;
         Coordinate coordinate = new Coordinate();
         coordinate.setOrdinate(Coordinate.X, getLon());
         coordinate.setOrdinate(Coordinate.Y, lat);
         this.coordinate = factory.createPoint(coordinate);
+        return true;
     }
 
     /**
      * 
      * @param lon The longitude to set. Must be a valid WGS-84 projection longitude value.
+     * @return true if the longitude is a valid WGS-84 projection value and has been correctly set, false otherwise.
      */
-    public void setLon(double lon) {
-        //TODO check param
+    public boolean setLon(double lon) {
+        if(lon<-180. || lon>180) return false;
         Coordinate coordinate = new Coordinate();
         coordinate.setOrdinate(Coordinate.Y, getLat());
         coordinate.setOrdinate(Coordinate.X, lon);
         this.coordinate = factory.createPoint(coordinate);
+        return true;
     }
 
     public void setUrl(URL url) {
@@ -277,12 +297,10 @@ public class Stop extends GTFS{
     }
 
     public void setWheelchairBoarding(Boolean wheelchairBoarding) {
-        this.wheelchairBoarding = wheelchairBoarding;
+        this.wheelchairBoarding = booleanToByte(wheelchairBoarding);
     }
 
     public void setCoordinate(Point coordinate) {
         this.coordinate = coordinate;
     }
-    
-    
 }

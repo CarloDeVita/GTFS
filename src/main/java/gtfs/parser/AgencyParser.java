@@ -29,23 +29,23 @@ public class AgencyParser extends GTFSParser<Agency> {
         String email = parameters[7];
         
         if(name==null || urlString==null || timezone==null)
-            throw new RuntimeException("Missing required value");
+            throw new GTFSParsingException("Missing required value");
         
         // get and check the url
         URL url = null;
         try{
             url = new URL(urlString);
         }catch(MalformedURLException e){
-            throw new RuntimeException("Malformed URL : "+urlString);
+            throw new GTFSParsingException("Malformed URL : "+urlString);
         }
         
         if(records>0 && (noAgencyId || id==null))
-            throw new RuntimeException("Id can be optional only if the file contains a single agency");
+            throw new GTFSParsingException("Id can be optional only if the file contains a single agency");
         
         // create and add the agency
         Agency a = new Agency(id, name, url, timezone, lang, phone, fareUrl, email);
         if(!result.add(a))
-            throw new RuntimeException("Multiple equal agencies");
+            throw new GTFSParsingException("Multiple equal agencies");
         records++;
     }
 

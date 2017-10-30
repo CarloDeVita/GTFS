@@ -68,7 +68,7 @@ public class ShapeParser extends GTFSParser<Shape>{
         
         // check required field
         if(shapeId==null || latString==null || lonString==null)
-            throw new RuntimeException("Missing required value");
+            throw new GTFSParsingException("Missing required value");
         
         // check if shape already found before
         boolean newShape = false;
@@ -86,27 +86,27 @@ public class ShapeParser extends GTFSParser<Shape>{
             latitude = Double.parseDouble(latString);
             longitude = Double.parseDouble(lonString);
         }catch(NumberFormatException e){
-            throw new RuntimeException("Invalid latitude or longitude");
+            throw new GTFSParsingException("Invalid latitude or longitude");
         }
         if(latitude>90. || latitude<-90.)
-            throw new RuntimeException("Invalid WGS84 latitude value");
+            throw new GTFSParsingException("Invalid WGS84 latitude value "+latString);
         if(longitude>180. || longitude<-180.)
-            throw new RuntimeException("Invalid WGS84 longitude value");
+            throw new GTFSParsingException("Invalid WGS84 longitude value "+lonString);
         
         // get and check the sequence number
         int sequence = -1;
         try{
            sequence = Integer.parseInt(sequenceString);
         }catch(NumberFormatException e){
-            throw new RuntimeException("Invalid sequence value");
+            throw new GTFSParsingException("Invalid sequence value "+sequenceString);
         }
         if(sequence<0)
-            throw new RuntimeException("Sequence value must be positive");
+            throw new GTFSParsingException("Sequence value must be positive");
         
         // check if sequence number increases
         Integer lastSequence = lastSequences.get(shapeId);
         if(lastSequence!=null && sequence<=lastSequence)
-            throw new RuntimeException("Sequence number must increase");
+            throw new GTFSParsingException("Sequence number must increase");
         
         // get and check the distance traveled
         double distance = -1;
@@ -114,16 +114,16 @@ public class ShapeParser extends GTFSParser<Shape>{
             try{
                 distance = Double.parseDouble(distanceString);
             }catch(NumberFormatException e){
-                throw new RuntimeException("Invalid distance value "+ "distance : "+distanceString);
+                throw new GTFSParsingException("Invalid distance value "+distanceString);
             }
             if(distance<0)
-                throw new RuntimeException("Distance value must be positive");
+                throw new GTFSParsingException("Distance value must be positive");
         }
         
         // check if distance increases
         Double lastDistance = lastDistances.get(shapeId);
         if(lastDistance!=null && distance<lastDistance)
-            throw new RuntimeException("Distance must increase");
+            throw new GTFSParsingException("Distance must increase");
         
         // create the point
         Shape.Point point;

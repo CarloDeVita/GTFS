@@ -1,18 +1,26 @@
 package gtfs.entities;
 
+import java.util.Comparator;
+import org.hibernate.annotations.CascadeType;
 import javax.persistence.Column;
+import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
+import javax.persistence.Table;
+import org.hibernate.annotations.Cascade;
 
 /**
  * The frequency of a departure time schedule for a trip.
- * The natural order of the instances is based on the start time.
  * 
  * @see <a href="https://developers.google.com/transit/gtfs/reference/#frequenciestxt">GTFS Overview - Frequencies</a>
  */
-public class Frequency extends GTFS implements Comparable<Frequency>{
-    private Trip trip; // required //TODO is the association necessary?
+@Entity
+@Table(name="frequencies", schema="gtfs")
+public class Frequency extends GTFS implements java.io.Serializable{
+    public static Comparator<Frequency> START_COMPARATOR = new StartComparator();
+    public static Comparator<Frequency> END_COMPARATOR = new EndComparator();
+    private Trip trip; // required
     /**
      * The time when the frequency starts to be considered.
      */
@@ -23,10 +31,11 @@ public class Frequency extends GTFS implements Comparable<Frequency>{
     private String endTime; // required
     /**
      * The seconds between departures.
-     * The trip starts every startTime + headwaySeconds.
+     * The vehicle leaves every headwaySeconds starting from startTime.
      */
     private int headwaySeconds; // required
     
+    //TODO javadoc
     private boolean exactTime = false;
     
     /**
@@ -109,15 +118,19 @@ public class Frequency extends GTFS implements Comparable<Frequency>{
         this.exactTime = exactTime;
     }
 
+    public void setTrip(Trip trip) {
+        this.trip = trip;
+    }
+    
     @Id
     @ManyToOne(optional=false)
     @JoinColumn(name="trip", nullable=false)
+    @Cascade(value={CascadeType.SAVE_UPDATE})
     public Trip getTrip() {
         return trip;
     }
 
     @Id
-    @Column(name="start_time")
     public String getStartTime() {
         return startTime;
     }
@@ -135,6 +148,20 @@ public class Frequency extends GTFS implements Comparable<Frequency>{
         return exactTime;
     }
     
+    public static class StartComparator implements Comparator<Frequency>{
+        @Override
+        public int compare(Frequency o1, Frequency o2) {
+            return StopTime.TIME_COMPARATOR.compare(o1.startTime, o2.startTime);
+        }
+    }
+    
+    public static class EndComparator implements Comparator<Frequency>{
+        @Override
+        public int compare(Frequency o1, Frequency o2) {
+            return StopTime.TIME_COMPARATOR.compare(o1.endTime, o2.endTime);
+        }
+    }
+    
     @Override
     public String toString(){
         StringBuilder builder = new StringBuilder();
@@ -149,10 +176,5 @@ public class Frequency extends GTFS implements Comparable<Frequency>{
         builder.append(",Is exact time ? ");
         builder.append(exactTime);
         return builder.toString();
-    }
-
-    @Override
-    public int compareTo(Frequency o) {
-        return startTime.compareTo(o.startTime);
     }
 }

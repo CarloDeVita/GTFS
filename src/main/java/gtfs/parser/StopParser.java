@@ -85,7 +85,7 @@ public class StopParser extends GTFSParser<Stop> {
     
         // check required fields
         if(id==null || name==null || latString==null || lonString==null)
-            throw new RuntimeException("Required value missing");
+            throw new GTFSParsingException("Required value missing");
         
         // get and check latitude and longitude
         double latitude;
@@ -94,12 +94,12 @@ public class StopParser extends GTFSParser<Stop> {
             latitude = Double.parseDouble(latString);
             longitude = Double.parseDouble(lonString);
         }catch(NumberFormatException e){
-            throw new RuntimeException("Invalid value");
+            throw new GTFSParsingException("Invalid latitude or longitude value");
         }
         if(latitude<-90. || latitude>90.)
-            throw new RuntimeException("Invalid WGS84 latitude");
+            throw new GTFSParsingException("Invalid WGS84 latitude "+latString);
         if(longitude<-180. || longitude>180.)
-            throw new RuntimeException("Invalid WGS84 longitude");
+            throw new GTFSParsingException("Invalid WGS84 longitude "+lonString);
     
         // get and check the url
         URL url = null;
@@ -107,7 +107,7 @@ public class StopParser extends GTFSParser<Stop> {
             try {
                 url = new URL(urlString);
             } catch (MalformedURLException ex) {
-                throw new RuntimeException("Malformed URL");
+                throw new GTFSParsingException("Malformed URL "+urlString);
             }
         }
         
@@ -118,10 +118,10 @@ public class StopParser extends GTFSParser<Stop> {
             try{
                 wheelStringValue = Integer.parseInt(wheelchairString);
             }catch(NumberFormatException e){
-                throw new RuntimeException("Invalid wheelchair boarding value");
+                throw new GTFSParsingException("Invalid wheelchair boarding value");
             }
             if(wheelStringValue<0 || wheelStringValue>2)
-                throw new RuntimeException("Wheelchair boarding values can be only 0 or 1");
+                throw new GTFSParsingException("Wheelchair boarding value can be only 0 or 1");
             if(wheelStringValue==1)
                 wheelchair = true;
             else if(wheelStringValue==2)
@@ -134,9 +134,9 @@ public class StopParser extends GTFSParser<Stop> {
             try{
                 locationType = Integer.parseInt(location);
                 if(locationType<0 || locationType>1)
-                    throw new RuntimeException("Location type can have values 0 or 1");
+                    throw new GTFSParsingException("Location type can have values 0 or 1");
             }catch(NumberFormatException e){
-                throw new RuntimeException("Invalid location type");
+                throw new GTFSParsingException("Invalid location type "+location);
             }
         }
         

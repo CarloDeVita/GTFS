@@ -2,6 +2,7 @@ package gtfs.entities;
 
 import java.time.LocalDate;
 import java.time.DayOfWeek;
+import java.time.Month;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -10,16 +11,10 @@ import javax.persistence.CollectionTable;
 import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
 import javax.persistence.Id;
-import javax.persistence.JoinColumn;
-import javax.persistence.JoinTable;
-import javax.persistence.MapKeyColumn;
 import javax.persistence.MapKeyEnumerated;
 import javax.persistence.MapKeyJoinColumn;
-import javax.persistence.OneToMany;
 import javax.persistence.Table;
-import org.hibernate.annotations.Type;
 
 /**
  * A service availability schedule.
@@ -28,8 +23,16 @@ import org.hibernate.annotations.Type;
  * @see <a href="https://developers.google.com/transit/gtfs/reference/#calendar_datestxt">GTFS Overview - Calendar Dates</a>
  */
 @Entity
-@Table(name="calendars", schema="gtfs", catalog="postgis_test")
+@Table(name="calendars", schema="gtfs")
 public class Calendar extends GTFS{
+    /**
+     * The maximum date supported by the class, that is 2999-12-01 (YYYY-MM-DD).
+     */
+    public static final LocalDate MAX_DATE = LocalDate.of(2999, Month.DECEMBER, Month.DECEMBER.maxLength());
+    /**
+     * The minimum date supported by the class, that is the 00:00:00 UTC Thursday 1, January 1970 (Unix epoch).
+     */
+    public static final LocalDate MIN_DATE = LocalDate.of(1970, Month.JANUARY, 1);
     private String id;
     private Map<DayOfWeek,Boolean> serviceDays;
     private LocalDate startDate;
@@ -52,23 +55,25 @@ public class Calendar extends GTFS{
      * Service will be set inactive for all the days of the week.
      * 
      * @param id
-     * @param startDate the first date of the service. Null is replaced with the minimum date supported.
-     * @param endDate the last date of the service. Null is replaced with the maximum date supported.
+     * @param startDate the first date of the service. Null is replaced with {@link #MIN_DATE}.
+     * @param endDate the last date of the service. Null is replaced with {@link #MAX_DATE}.
      * @throws IllegalArgumentException if id is null or if the start date comes after the end date.
      */
     public Calendar(String id, LocalDate startDate, LocalDate endDate){
         if(id==null) throw new IllegalArgumentException("Id must be not null");
-        this.id = id;
-        this.startDate = (startDate!=null ? startDate : LocalDate.MIN);
-        this.endDate = (endDate!=null ? endDate : LocalDate.MAX);
+        if(startDate==null) startDate = MIN_DATE;
+        if(endDate==null) endDate = MIN_DATE;
         
-        if(this.endDate.compareTo(this.startDate)<0)
+        if(startDate.isAfter(endDate))
             throw new IllegalArgumentException("Start date comes after the end date");
         
+        this.id = id;
+        this.startDate = startDate;
+        this.endDate = endDate;
+
         this.serviceDays = new EnumMap<>(DayOfWeek.class);
         for(DayOfWeek d : DayOfWeek.values())
            this.serviceDays.put(d, Boolean.FALSE);
-        
     }
     
     /**
@@ -92,9 +97,8 @@ public class Calendar extends GTFS{
         }
     }
 
-    /*@ElementCollection(targetClass=Boolean.class)
+    @ElementCollection
     @MapKeyEnumerated(EnumType.ORDINAL)
-    @OneToMany*/
     @javax.persistence.Transient
     public Map<DayOfWeek, Boolean> getServiceDays() {
         if(serviceDays == null)
@@ -107,13 +111,8 @@ public class Calendar extends GTFS{
      * @return  a read-only map containing specific dates of activity or inactivity.
      */
     @ElementCollection
-    @OneToMany
-    //TODO
-    @CollectionTable(name="calendar_exceptions")
-    @MapKeyJoinColumn(name = "calendar")
-    /*@JoinTable(name="exceptions", schema="gtfs", catalog="postgis_test",
-            joinColumns=@JoinColumn(name="calendar", nullable=false))
-    //TODO mappa con valore boolean???*/
+    @CollectionTable(name="calendar_exceptions", schema="gtfs", catalog="postgis_test")
+    @MapKeyJoinColumn(name="calendar")
     public Map<LocalDate, Boolean> getExceptions(){
         if(exceptions==null)
             setExceptions(new HashMap<>());
@@ -140,6 +139,7 @@ public class Calendar extends GTFS{
     
     @Override
     public boolean equals(Object o){
+        if(this==o) return true;
         if(!(o instanceof Calendar)) return false;
         Calendar c = (Calendar) o;
         return id.equals(c.id);
@@ -150,10 +150,18 @@ public class Calendar extends GTFS{
         return id.hashCode();
     }
 
+    /**
+     * 
+     * @return the start date. Null can be considered {@link LocalDate#MIN}.
+     */
     public LocalDate getStartDate() {
         return startDate;
     }
 
+    /**
+     * 
+     * @return the end date. Null can be considered {@link LocalDate#MAX}.
+     */
     public LocalDate getEndDate() {
         return endDate;
     }
@@ -166,12 +174,30 @@ public class Calendar extends GTFS{
         this.serviceDays = serviceDays;
     }
 
-    public void setStartDate(LocalDate startDate) {
+    /**
+     * 
+     * @param startDate the start date to set. Null is replaced with {@link #MIN_DATE}.
+     * @return true if the start date isn't after the end date and it has been set, false otherwise. 
+     */
+    public boolean setStartDate(LocalDate startDate) {
+        if(startDate==null) startDate = MIN_DATE;
+        if(startDate.isAfter(endDate))
+            return false;
         this.startDate = startDate;
+        return true;
     }
 
-    public void setEndDate(LocalDate endDate) {
+    /**
+     * 
+     * @param endDate the end date to set. Null is replaced with {@link #MAX_DATE}.
+     * @return true if the end date isn't before the start date and it has been set, false otherwise.
+     */
+    public boolean setEndDate(LocalDate endDate) {
+        if(endDate==null) endDate = MAX_DATE;
+        if(endDate.isBefore(startDate))
+            return false;
         this.endDate = endDate;
+        return true;
     }
 
     public void setExceptions(Map<LocalDate, Boolean> exceptions) {

@@ -90,29 +90,29 @@ public class FrequencyParser extends GTFSParser<Frequency>{
         
         // check required values
         if(tripId==null || start==null || end==null || seconds==null)
-            throw new RuntimeException("Missing required value");
+            throw new GTFSParsingException("Missing required value");
         
         // get and check trip
         Trip trip = trips.get(tripId);
         if(trip==null)
-            throw new RuntimeException("Missing trip : "+ tripId);
+            throw new GTFSParsingException("Missing trip : "+ tripId);
         
         //check times
         if(!StopTime.isValidTime(start))
-            throw new RuntimeException("Bad start time value : "+start);
+            throw new GTFSParsingException("Bad start time value : "+start);
         if(!StopTime.isValidTime(end))
-            throw new RuntimeException("Bad end time value : "+end);
+            throw new GTFSParsingException("Bad end time value : "+end);
         if(StopTime.TIME_COMPARATOR.compare(start, end)>=0)
-            throw new RuntimeException("Start time after end time");
+            throw new GTFSParsingException("Start time after end time");
         
         // get and check headway_seconds
         int headwaySec = -1;
         try{
             headwaySec = Integer.parseInt(seconds);
             if(headwaySec<=0)
-                throw new RuntimeException("Bad headway_sec value : "+headwaySec);
+                throw new GTFSParsingException("Bad headway_sec value : "+headwaySec);
         }catch(NumberFormatException e){
-            throw new RuntimeException("Bad headway_sec value : "+headwaySec);
+            throw new GTFSParsingException("Bad headway_sec value : "+headwaySec);
         }
         
         // get and check exact_times
@@ -122,11 +122,11 @@ public class FrequencyParser extends GTFSParser<Frequency>{
             try{
                 exactValue = Integer.parseInt(exactTimes);
                 if(exactValue!=0 && exactValue!=1)
-                    throw new RuntimeException("Bad exact_times value : "+exactTimes);
+                    throw new GTFSParsingException("Bad exact_times value : "+exactTimes);
                 else
                     exact = (exactValue==1);
             }catch(NumberFormatException e){
-                throw new RuntimeException("Bad exact_time value : "+exactTimes);
+                throw new GTFSParsingException("Bad exact_time value : "+exactTimes);
             }
         }
         
@@ -134,7 +134,7 @@ public class FrequencyParser extends GTFSParser<Frequency>{
         if(fileExactTimes==null)
             fileExactTimes = exact;
         else if(exact!=fileExactTimes)
-            throw new RuntimeException("exact_times must be the same for all rows");
+            throw new GTFSParsingException("exact_times must be the same for all rows");
         
         // create and add frequency
         Frequency frequency = new Frequency(trip, start, end, headwaySec, exact);

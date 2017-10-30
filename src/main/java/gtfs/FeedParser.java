@@ -5,6 +5,7 @@ import gtfs.parser.*;
 import java.io.FileNotFoundException;
 import java.util.Collection;
 import java.io.IOException;
+import java.util.ArrayList;
 
 /**
  * A parser for an entire GTFS feed.
@@ -17,63 +18,134 @@ public class FeedParser {
      * @return the feed of the directory.
      * @throws FileNotFoundException if one of the required file misses.
      */
-    public Feed read(String directory) throws IOException, FileNotFoundException{
-        Collection<Agency> agencies = null;
-        Collection<Route> routes = null;
-        Collection<Calendar> calendars = null;
-        Collection<Shape> shapes = null;
-        Collection<Trip> trips= null;
-        Collection<Stop> stops = null;
-        Collection<StopTime> stopTimes = null;
-        Collection<Frequency> frequencies = null;
+    public Feed read(final String directory) throws IOException, FileNotFoundException{
+        final Thread threads[] = new Thread[3];
+        final Exception exceptions[] = new Exception[3];
+        // result containers for threads
+        ArrayList<Collection<Calendar>> calendarsContainer = new ArrayList<>(1);
+        ArrayList<Collection<Shape>> shapesContainer = new ArrayList<>(1);
+        ArrayList<Collection<Stop>> stopsContainer = new ArrayList<>(1);
+        ArrayList<Collection<Frequency>> frequenciesContainer = new ArrayList<>(1);
+        
+        // read the calendars
+        threads[0] = new Thread(){
+            @Override
+            public void run(){
+                CalendarParser calendarParser = new CalendarParser();
+                try{
+                    Collection<Calendar> calendars = calendarParser.read(directory);
+                    calendarsContainer.add(calendars);
+                }catch(Exception e){
+                        exceptions[0] = e;
+                }
+            }
+        };
+
+        // read the shapes
+        threads[1] = new Thread(){
+            @Override
+            public void run(){
+                ShapeParser shapeParser = new ShapeParser();
+                try{
+                    Collection<Shape> shapes = shapeParser.parse(directory);
+                    shapesContainer.add(shapes);
+                }catch(Exception e){
+                    exceptions[1] = e;
+                }
+            }
+        };
+        
+        // read the stops
+        threads[2] = new Thread(){
+            @Override
+            public void run(){
+                StopParser stopParser = new StopParser();
+                try{
+                    Collection<Stop> stops = stopParser.parse(directory);
+                    stopsContainer.add(stops);
+                }catch(Exception e){
+                    exceptions[2] = e;
+                }
+            }
+        };
+        
+        for(Thread t : threads)
+            t.start();
         
         // read the agencies
         AgencyParser agencyParser = new AgencyParser();
-        agencies = agencyParser.parse(directory);
+        Collection<Agency> agencies = agencyParser.parse(directory);
         
         // read the routes
+        Collection<Route> routes = null;
         RouteParser routeParser = new RouteParser();
         routeParser.addAgencies(agencies);
         routes = routeParser.parse(directory);
 
-        // read the calendars and the calendar dates
-        CalendarParser calendarParser = new CalendarParser();
-        calendars = calendarParser.read(directory);
-        
-        // read the shapes
-        ShapeParser shapeParser = new ShapeParser();
-        try{
-            shapes = shapeParser.parse(directory);
-        }catch(FileNotFoundException ex){
-            // nothing because not required
+        for(int i=0 ; i<3 ; i++){
+            try {
+                threads[i].join();
+                threads[i] = null;
+            } catch (InterruptedException ex) {
+                return null;
+            }
+            Exception e = exceptions[i];
+            if(e!=null){
+                if((e instanceof FileNotFoundException)){
+                    if(i!=1)throw (FileNotFoundException) e;
+                }
+                if(e instanceof IOException) throw (IOException) e;
+                if(e instanceof GTFSParsingException) throw (GTFSParsingException) e;
+                throw (RuntimeException) e;
+            }
         }
-        
+
         // read the trips
+        Collection<Shape> shapes = shapesContainer.isEmpty() ? null : shapesContainer.get(0);
+        final Collection<Stop> stops = stopsContainer.get(0);
+        Collection<Calendar> calendars = calendarsContainer.get(0);
         TripParser tripParser = new TripParser();
         tripParser.addCalendars(calendars);
         tripParser.addRoutes(routes);
         if(shapes!=null)
             tripParser.addShapes(shapes);
-        trips = tripParser.parse(directory);
-        
-        // read the stops
-        StopParser stopParser = new StopParser();
-        stops = stopParser.parse(directory);
+        final Collection<Trip> trips = tripParser.parse(directory);
+
+        // read the frequencies
+        threads[0] = new Thread(){
+            @Override
+            public void run(){
+                FrequencyParser frequencyParser = new FrequencyParser();
+                try{
+                    frequencyParser.addTrips(trips);
+                    Collection<Frequency> frequencies = frequencyParser.parse(directory);
+                    frequenciesContainer.add(frequencies);
+                } catch (Exception e) {
+                    exceptions[0] = e;
+                }
+            }
+        };
+        threads[0].start();
         
         // read the stop times
         StopTimeParser stopTimeParser = new StopTimeParser();
         stopTimeParser.addStops(stops);
         stopTimeParser.addTrips(trips);
-        stopTimes = stopTimeParser.parse(directory);
+        Collection<StopTime> stopTimes = stopTimeParser.parse(directory);
         
-        // read the frequencies
-        FrequencyParser frequencyParser = new FrequencyParser();
-        frequencyParser.addTrips(trips);
         try{
-            frequencies = frequencyParser.parse(directory);
-        }catch(FileNotFoundException ex){
-            // nothing because not required
+            threads[0].join();
+        }catch(InterruptedException e){
+            return null;
         }
+        Exception e = exceptions[0];
+        if(e!=null && !(e instanceof FileNotFoundException)){
+            if(e instanceof IOException) throw (IOException) e;
+            if(e instanceof GTFSParsingException) throw (GTFSParsingException) e;
+            throw (RuntimeException) e;
+        }
+        
+        Collection<Frequency> frequencies = frequenciesContainer.isEmpty() ? null : frequenciesContainer.get(0);
         
         // create the feed
         Feed feed = new Feed();

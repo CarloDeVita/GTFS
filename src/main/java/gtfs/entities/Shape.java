@@ -5,13 +5,20 @@ import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.PrecisionModel;
 import java.util.SortedSet;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.TreeSet;
+import javax.persistence.CollectionTable;
+import javax.persistence.ElementCollection;
+import javax.persistence.Embeddable;
+import javax.persistence.Embedded;
+import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
 import javax.persistence.Id;
-import javax.persistence.JoinColumn;
-import javax.persistence.OneToMany;
 import javax.persistence.Table;
 import javax.persistence.Transient;
+import org.hibernate.annotations.Cascade;
+import org.hibernate.annotations.CascadeType;
+import org.hibernate.annotations.SortComparator;
 
 /**
  * The physical path the vehicle takes.
@@ -19,10 +26,11 @@ import javax.persistence.Transient;
  * @see <a href="https://developers.google.com/transit/gtfs/reference/#shapestxt">GTFS Overview - Shape</a>
  */
 @Entity
-@Table(name="shapes", schema="gtfs", catalog="postgis_test")
-public class Shape extends GTFS{
+@Table(name="shapes", schema="gtfs")
+public class Shape extends GTFS {
+    private static Comparator<Shape.Point> sequenceComparator = new Point.SequenceComparator();
     private String id;
-    private SortedSet<Point> points = new TreeSet<>((Point o1, Point o2) -> (o2.sequenceNumber-o1.sequenceNumber));
+    private SortedSet<Point> points = new TreeSet<>(sequenceComparator);
     
     /**
      * Creates a shape with no points.
@@ -47,8 +55,10 @@ public class Shape extends GTFS{
      * 
      * @return a read-only ordered view of the point that form the shape.
      */
-    @OneToMany(targetEntity=Shape.Point.class)
-    @JoinColumn(name="points", nullable=false)
+    @ElementCollection(targetClass=Point.class)
+    @CollectionTable(name="shape_points", schema="gtfs")
+    @SortComparator(Point.SequenceComparator.class)
+    @Cascade(value=CascadeType.ALL)
     public SortedSet<Point> getPoints(){
         return Collections.unmodifiableSortedSet(points);
     }
@@ -81,11 +91,11 @@ public class Shape extends GTFS{
     /**
      * A point of the shape with WGS84 coordinates.
      */
-    @Entity
-    @Table(name="shape_points", schema="gtfs", catalog="postgis_test")
+    @Embeddable
     public static class Point{
         private static GeometryFactory factory;
-        private com.vividsolutions.jts.geom.Point coordinate; 
+        private com.vividsolutions.jts.geom.Point coordinate;
+        
         /**
          * The sequence number of the point.
          */
@@ -118,6 +128,16 @@ public class Shape extends GTFS{
             
             this.coordinate = factory.createPoint(new Coordinate(lon, lat));
             this.sequenceNumber = sequence;
+        }
+        
+        public Point(){}
+        
+        public static class SequenceComparator implements Comparator<Shape.Point>{
+            @Override
+            public int compare(Point o1, Point o2) {
+                return Integer.compare(o1.sequenceNumber, o2.sequenceNumber);
+            }
+            
         }
         
         /**
@@ -170,6 +190,10 @@ public class Shape extends GTFS{
             this.distTraveled = distTraveled;
         }
 
+        /**
+         * 
+         * @return the distance from the first point of the shape if specified, -1 otherwise.
+         */
         public double getDistTraveled() {
             return distTraveled;
         }
@@ -183,6 +207,7 @@ public class Shape extends GTFS{
     
     @Override
     public boolean equals(Object o){
+        if(this==o) return true;
         if(!(o instanceof Shape)) return false;
         Shape s = (Shape) o;
         return id.equals(s.id);
