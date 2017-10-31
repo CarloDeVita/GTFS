@@ -1,6 +1,12 @@
 package demo;
 
 
+import com.vividsolutions.jts.geom.Coordinate;
+import com.vividsolutions.jts.geom.CoordinateSequence;
+import com.vividsolutions.jts.geom.GeometryFactory;
+import com.vividsolutions.jts.geom.LineString;
+import com.vividsolutions.jts.geom.PrecisionModel;
+import com.vividsolutions.jts.geom.impl.CoordinateArraySequence;
 import org.openstreetmap.gui.jmapviewer.JMapViewer;
 
 /*
@@ -23,8 +29,6 @@ public class Mappa extends javax.swing.JFrame {
         initComponents();
     }
 
-    
-    
     public void setRouteList(String[] routes){
         namesList.setModel(new javax.swing.DefaultComboBoxModel<>(routes));
     }
@@ -68,6 +72,8 @@ public class Mappa extends javax.swing.JFrame {
         dateFromLabel = new javax.swing.JLabel();
         dateToLabel = new javax.swing.JLabel();
         timeTo = new javax.swing.JComboBox<>();
+        jLabel1 = new javax.swing.JLabel();
+        snap = new javax.swing.JButton();
 
         javax.swing.GroupLayout jDialog1Layout = new javax.swing.GroupLayout(jDialog1.getContentPane());
         jDialog1.getContentPane().setLayout(jDialog1Layout);
@@ -110,7 +116,7 @@ public class Mappa extends javax.swing.JFrame {
         mapPanel.setLayout(mapPanelLayout);
         mapPanelLayout.setHorizontalGroup(
             mapPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 442, Short.MAX_VALUE)
+            .addGap(0, 450, Short.MAX_VALUE)
         );
         mapPanelLayout.setVerticalGroup(
             mapPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -136,7 +142,7 @@ public class Mappa extends javax.swing.JFrame {
         });
 
         routeLabel.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        routeLabel.setText("Route:");
+        routeLabel.setText("Route");
 
         chooser.setText("Choose GTFS");
         chooser.addActionListener(new java.awt.event.ActionListener() {
@@ -196,91 +202,113 @@ public class Mappa extends javax.swing.JFrame {
 
         timeTo.setModel(new javax.swing.DefaultComboBoxModel<>(times));
 
+        jLabel1.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        jLabel1.setText("GTFS");
+
+        snap.setText("jButton1");
+        snap.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                snapActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout selectionPanelLayout = new javax.swing.GroupLayout(selectionPanel);
         selectionPanel.setLayout(selectionPanelLayout);
         selectionPanelLayout.setHorizontalGroup(
             selectionPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(selectionPanelLayout.createSequentialGroup()
-                .addGroup(selectionPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                    .addComponent(show, javax.swing.GroupLayout.PREFERRED_SIZE, 181, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addGroup(selectionPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                        .addGroup(selectionPanelLayout.createSequentialGroup()
-                            .addContainerGap()
-                            .addComponent(chooser, javax.swing.GroupLayout.PREFERRED_SIZE, 180, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(clearButton, javax.swing.GroupLayout.PREFERRED_SIZE, 185, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addGroup(selectionPanelLayout.createSequentialGroup()
-                            .addGap(13, 13, 13)
-                            .addComponent(routeLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 45, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                            .addComponent(namesList, javax.swing.GroupLayout.PREFERRED_SIZE, 128, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addGroup(selectionPanelLayout.createSequentialGroup()
-                            .addContainerGap()
-                            .addGroup(selectionPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                .addComponent(weekDaysLabel)
-                                .addComponent(jLabel6)
-                                .addComponent(jLabel3)))))
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-            .addGroup(selectionPanelLayout.createSequentialGroup()
-                .addGap(41, 41, 41)
+                .addContainerGap()
                 .addGroup(selectionPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(mondayCheckBox, javax.swing.GroupLayout.Alignment.TRAILING)
-                    .addComponent(dateFromLabel, javax.swing.GroupLayout.Alignment.TRAILING)
-                    .addComponent(timeFromLabel, javax.swing.GroupLayout.Alignment.TRAILING))
-                .addGap(18, 18, 18)
-                .addGroup(selectionPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addComponent(weekDaysLabel)
                     .addGroup(selectionPanelLayout.createSequentialGroup()
-                        .addComponent(tuesdayCheckBox)
+                        .addGroup(selectionPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                            .addGroup(javax.swing.GroupLayout.Alignment.LEADING, selectionPanelLayout.createSequentialGroup()
+                                .addGap(35, 35, 35)
+                                .addGroup(selectionPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addComponent(chooser, javax.swing.GroupLayout.PREFERRED_SIZE, 180, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addGroup(selectionPanelLayout.createSequentialGroup()
+                                        .addGap(2, 2, 2)
+                                        .addGroup(selectionPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                            .addComponent(namesList, javax.swing.GroupLayout.PREFERRED_SIZE, 82, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                            .addGroup(selectionPanelLayout.createSequentialGroup()
+                                                .addComponent(show, javax.swing.GroupLayout.PREFERRED_SIZE, 181, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                                .addComponent(clearButton, javax.swing.GroupLayout.PREFERRED_SIZE, 76, javax.swing.GroupLayout.PREFERRED_SIZE))))))
+                            .addGroup(javax.swing.GroupLayout.Alignment.LEADING, selectionPanelLayout.createSequentialGroup()
+                                .addGap(28, 28, 28)
+                                .addComponent(mondayCheckBox)
+                                .addGap(18, 18, 18)
+                                .addComponent(tuesdayCheckBox)
+                                .addGap(18, 18, 18)
+                                .addComponent(wednesdayCheckBox)
+                                .addGap(18, 18, 18)
+                                .addComponent(thursdayCheckBox)
+                                .addGap(18, 18, 18)
+                                .addComponent(fridayCheckBox)))
                         .addGap(18, 18, 18)
-                        .addComponent(wednesdayCheckBox)
-                        .addGap(18, 18, 18)
-                        .addComponent(thursdayCheckBox))
-                    .addComponent(dateFrom, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(timeFrom, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                .addGroup(selectionPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(selectionPanelLayout.createSequentialGroup()
-                        .addGap(52, 52, 52)
-                        .addGroup(selectionPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                            .addComponent(dateToLabel)
-                            .addComponent(timeToLabel)))
-                    .addGroup(selectionPanelLayout.createSequentialGroup()
-                        .addGap(18, 18, 18)
-                        .addComponent(fridayCheckBox)))
-                .addGroup(selectionPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(selectionPanelLayout.createSequentialGroup()
-                        .addGap(8, 8, 8)
                         .addComponent(saturdayCheckBox)
                         .addGap(18, 18, 18)
                         .addComponent(sundayCheckBox))
+                    .addComponent(jLabel1)
+                    .addComponent(routeLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 45, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addGroup(selectionPanelLayout.createSequentialGroup()
-                        .addGap(18, 18, 18)
-                        .addGroup(selectionPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                            .addComponent(timeTo, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(dateTo, javax.swing.GroupLayout.DEFAULT_SIZE, 150, Short.MAX_VALUE))))
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, selectionPanelLayout.createSequentialGroup()
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addComponent(availabilityButton, javax.swing.GroupLayout.PREFERRED_SIZE, 152, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(46, 46, 46))
+                        .addGroup(selectionPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(selectionPanelLayout.createSequentialGroup()
+                                .addGap(28, 28, 28)
+                                .addGroup(selectionPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, selectionPanelLayout.createSequentialGroup()
+                                        .addComponent(timeFromLabel)
+                                        .addGap(18, 18, 18)
+                                        .addComponent(timeFrom, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                        .addGap(64, 64, 64))
+                                    .addGroup(selectionPanelLayout.createSequentialGroup()
+                                        .addComponent(dateFromLabel)
+                                        .addGap(18, 18, 18)
+                                        .addComponent(dateFrom, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                        .addGap(18, 18, 18))))
+                            .addGroup(selectionPanelLayout.createSequentialGroup()
+                                .addGap(10, 10, 10)
+                                .addComponent(snap)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)))
+                        .addGroup(selectionPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(selectionPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                                .addGroup(selectionPanelLayout.createSequentialGroup()
+                                    .addComponent(timeToLabel)
+                                    .addGap(18, 18, 18)
+                                    .addComponent(timeTo, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                                .addGroup(javax.swing.GroupLayout.Alignment.LEADING, selectionPanelLayout.createSequentialGroup()
+                                    .addComponent(dateToLabel)
+                                    .addGap(18, 18, 18)
+                                    .addComponent(dateTo, javax.swing.GroupLayout.DEFAULT_SIZE, 150, Short.MAX_VALUE)
+                                    .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 3, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                            .addGroup(selectionPanelLayout.createSequentialGroup()
+                                .addGap(37, 37, 37)
+                                .addComponent(availabilityButton, javax.swing.GroupLayout.PREFERRED_SIZE, 152, javax.swing.GroupLayout.PREFERRED_SIZE))))
+                    .addComponent(jLabel6)
+                    .addComponent(jLabel3))
+                .addContainerGap(34, Short.MAX_VALUE))
         );
 
-        selectionPanelLayout.linkSize(javax.swing.SwingConstants.HORIZONTAL, new java.awt.Component[] {chooser, clearButton, show});
+        selectionPanelLayout.linkSize(javax.swing.SwingConstants.HORIZONTAL, new java.awt.Component[] {dateFrom, dateTo, timeFrom, timeTo});
 
         selectionPanelLayout.setVerticalGroup(
             selectionPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(selectionPanelLayout.createSequentialGroup()
-                .addContainerGap()
-                .addGroup(selectionPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(chooser)
-                    .addComponent(clearButton))
-                .addGap(33, 33, 33)
-                .addGroup(selectionPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(namesList, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(routeLabel)
-                    .addComponent(show))
-                .addGap(51, 51, 51)
-                .addComponent(weekDaysLabel)
+                .addGap(10, 10, 10)
+                .addComponent(jLabel1)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(chooser)
+                .addGap(18, 18, 18)
+                .addComponent(routeLabel)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(namesList, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addGroup(selectionPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(show)
+                    .addComponent(clearButton))
+                .addGap(25, 25, 25)
+                .addComponent(weekDaysLabel)
+                .addGap(10, 10, 10)
                 .addGroup(selectionPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(mondayCheckBox)
                     .addComponent(tuesdayCheckBox)
@@ -289,7 +317,7 @@ public class Mappa extends javax.swing.JFrame {
                     .addComponent(fridayCheckBox)
                     .addComponent(saturdayCheckBox)
                     .addComponent(sundayCheckBox))
-                .addGap(31, 31, 31)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(jLabel6)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addGroup(selectionPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
@@ -305,12 +333,14 @@ public class Mappa extends javax.swing.JFrame {
                     .addComponent(timeFromLabel)
                     .addComponent(timeFrom, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(timeTo, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 43, Short.MAX_VALUE)
-                .addComponent(availabilityButton, javax.swing.GroupLayout.PREFERRED_SIZE, 33, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(28, 28, 28))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 63, Short.MAX_VALUE)
+                .addGroup(selectionPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(availabilityButton, javax.swing.GroupLayout.PREFERRED_SIZE, 33, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(snap))
+                .addContainerGap())
         );
 
-        selectionPanelLayout.linkSize(javax.swing.SwingConstants.VERTICAL, new java.awt.Component[] {chooser, clearButton, dateFrom, dateTo, show, timeFrom, timeTo});
+        selectionPanelLayout.linkSize(javax.swing.SwingConstants.VERTICAL, new java.awt.Component[] {dateFrom, dateTo, timeFrom, timeTo});
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
@@ -325,11 +355,11 @@ public class Mappa extends javax.swing.JFrame {
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                .addGap(20, 20, 20)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                    .addComponent(selectionPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(mapPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+            .addGroup(layout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(mapPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(selectionPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addContainerGap())
         );
 
@@ -347,6 +377,10 @@ public class Mappa extends javax.swing.JFrame {
     }//GEN-LAST:event_timeFromItemStateChanged
 
     private void availabilityButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_availabilityButtonActionPerformed
+        String nameRoute = (String)namesList.getSelectedItem();
+        controller.testDistance(nameRoute);
+        
+        
         /*Date date = dateFrom.getDate();
         Instant instant = Instant.ofEpochMilli(date.getTime());
         LocalDate localDate = LocalDateTime.ofInstant(instant, ZoneId.systemDefault()).toLocalDate();
@@ -401,6 +435,11 @@ public class Mappa extends javax.swing.JFrame {
             controller.showRoute((String)namesList.getSelectedItem());
     }//GEN-LAST:event_showActionPerformed
 
+    private void snapActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_snapActionPerformed
+       String name = (String)namesList.getSelectedItem();
+       controller.snap(name);
+    }//GEN-LAST:event_snapActionPerformed
+
     
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
@@ -415,6 +454,7 @@ public class Mappa extends javax.swing.JFrame {
     private javax.swing.JDialog jDialog1;
     private javax.swing.JDialog jDialog2;
     private javax.swing.JDialog jDialog3;
+    private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel3;
     private javax.swing.JLabel jLabel6;
     private javax.swing.JPanel mapPanel;
@@ -424,6 +464,7 @@ public class Mappa extends javax.swing.JFrame {
     private javax.swing.JCheckBox saturdayCheckBox;
     private javax.swing.JPanel selectionPanel;
     private javax.swing.JButton show;
+    private javax.swing.JButton snap;
     private javax.swing.JCheckBox sundayCheckBox;
     private javax.swing.JCheckBox thursdayCheckBox;
     private javax.swing.JComboBox<String> timeFrom;
