@@ -50,6 +50,8 @@ public class Stop extends GTFS{
         return 1;
     }
     
+    public Stop(){}
+    
     /**
      * The Stop constructor with all the possibile parameters.
      * 

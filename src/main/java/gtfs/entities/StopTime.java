@@ -101,6 +101,8 @@ public class StopTime extends GTFS implements java.io.Serializable{
         return (type>=0 && type<=3);
     }
     
+    public StopTime(){}
+    
     /**
      * 
      * @param trip The trip of the stop time. Must be not null.

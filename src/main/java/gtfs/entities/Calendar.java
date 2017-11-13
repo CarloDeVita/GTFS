@@ -39,6 +39,11 @@ public class Calendar extends GTFS{
     private LocalDate endDate;
     private Map<LocalDate, Boolean> exceptions;
     
+    public Calendar(){
+        startDate = MIN_DATE;
+        endDate = MAX_DATE;
+    }
+    
     /**
      * The constructor of a calendar with the id parameter only.
      * Service will be set inactive for all the days of the week.

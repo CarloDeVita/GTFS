@@ -68,6 +68,8 @@ public class Route extends GTFS{
         return (type>=0 && type<=7);
     }
     
+    public Route(){}
+    
     /**
      * A route constructor with the required fields only.
      * 

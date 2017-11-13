@@ -57,6 +57,8 @@ public class Trip extends GTFS{
         return (direction>=-1 && direction<=1);
     }
     
+    public Trip(){}
+    
     /**
      * The Trip constructor with all the required fields.
      * 

@@ -38,6 +38,8 @@ public class Frequency extends GTFS implements java.io.Serializable{
     //TODO javadoc
     private boolean exactTime = false;
     
+    public Frequency(){}
+    
     /**
      * The Frequency constructor with all the possible parameters.
      * 

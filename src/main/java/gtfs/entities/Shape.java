@@ -32,6 +32,8 @@ public class Shape extends GTFS {
     private String id;
     private SortedSet<Point> points = new TreeSet<>(sequenceComparator);
     
+    public Shape(){}
+    
     /**
      * Creates a shape with no points.
      * 
