@@ -1,12 +1,10 @@
 package demo;
 
-import com.vividsolutions.jts.geom.CoordinateSequence;
-import com.vividsolutions.jts.geom.GeometryFactory;
-import com.vividsolutions.jts.geom.LineString;
-import com.vividsolutions.jts.geom.Point;
-import com.vividsolutions.jts.geom.PrecisionModel;
+
 import com.vividsolutions.jts.geom.impl.CoordinateArraySequence;
 import com.vividsolutions.jts.operation.distance.DistanceOp;
+import com.vividsolutions.jts.geom.*;
+import com.vividsolutions.jts.operation.overlay.snap.GeometrySnapper;
 import demo.maputils.IconMarker;
 import demo.maputils.MapLine;
 import gtfs.Feed;
@@ -17,6 +15,8 @@ import gtfs.entities.Stop;
 import gtfs.entities.StopTime;
 import gtfs.entities.Trip;
 import java.awt.Color;
+import java.awt.Cursor;
+import java.awt.Dialog;
 import java.awt.Image;
 import java.io.File;
 import java.io.IOException;
@@ -31,6 +31,7 @@ import java.util.prefs.Preferences;
 import javax.imageio.ImageIO;
 import javax.swing.JDialog;
 import javax.swing.JFileChooser;
+import javax.swing.JPanel;
 import javax.swing.JProgressBar;
 import javax.swing.SwingWorker;
 import net.sf.dynamicreports.jasper.builder.JasperReportBuilder;
@@ -40,8 +41,6 @@ import static net.sf.dynamicreports.report.builder.DynamicReports.col;
 import static net.sf.dynamicreports.report.builder.DynamicReports.report;
 import static net.sf.dynamicreports.report.builder.DynamicReports.stl;
 import static net.sf.dynamicreports.report.builder.DynamicReports.type;
-import net.sf.dynamicreports.report.builder.chart.AxisFormatBuilder;
-import net.sf.dynamicreports.report.builder.chart.XyAreaChartBuilder;
 import net.sf.dynamicreports.report.builder.chart.XyLineChartBuilder;
 import net.sf.dynamicreports.report.builder.column.TextColumnBuilder;
 import net.sf.dynamicreports.report.builder.style.StyleBuilder;
@@ -50,6 +49,9 @@ import net.sf.dynamicreports.report.exception.DRException;
 
 import org.openstreetmap.gui.jmapviewer.Coordinate;
 import org.openstreetmap.gui.jmapviewer.JMapViewer;
+import org.openstreetmap.gui.jmapviewer.MapMarkerDot;
+import org.openstreetmap.gui.jmapviewer.interfaces.ICoordinate;
+import org.openstreetmap.gui.jmapviewer.interfaces.MapMarker;
 
 /**
  *
@@ -98,7 +100,9 @@ public class MapController {
      * @param dir absolute path of GTFS directory.
      */
     public void setGTFS(String dir) throws IOException{
-        final JDialog dialog = new JDialog(m, "Wait"); 
+        m.disableInput();
+        
+        /*final JDialog dialog = new JDialog(m, "Wait"); 
         dialog.setLocation(m.getWidth()/2, m.getHeight()/2- dialog.getHeight());
         dialog.setUndecorated(false); 
         
@@ -110,8 +114,9 @@ public class MapController {
         dialog.add(bar);
         
         dialog.setSize(300,200);
-        dialog.setVisible(true);
-        
+        dialog.setVisible(true);*/
+        Cursor c = new Cursor(Cursor.WAIT_CURSOR);
+        m.setCursor(c);
         SwingWorker<Void,Void> sw = new SwingWorker<Void,Void>(){
             @Override
             protected Void doInBackground() throws Exception {
@@ -131,7 +136,10 @@ public class MapController {
             
             @Override
             protected void done(){
-                dialog.dispose();
+                m.enableInput();
+                m.setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
+                
+                //dialog.dispose();
             }
         };
         sw.execute();
@@ -168,7 +176,7 @@ public class MapController {
                 List<Coordinate> shapel = new LinkedList<>();
                 for(Shape.Point p : s.getPoints()){
                     c = new Coordinate( p.getLat(),p.getLon());
-                    shapel.add(new Coordinate(p.getLat(),p.getLon()));                       
+                    shapel.add(c);                       
                 }
                 
                 map.addMapPolygon(new MapLine(shapel));
@@ -176,6 +184,7 @@ public class MapController {
                 for(StopTime stopT : t.getStopTimes()){
                     stops.add(stopT.getStop());
                 }
+                break;
             }
             for(Stop stop : stops){
                 map.addMapMarker(new IconMarker(new Coordinate(stop.getLat(),stop.getLon()), im));
@@ -237,17 +246,118 @@ public class MapController {
         }
     }
 
-    
-    void snap(String name) {
-       Route r = feed.getRouteByName(name);
-       HashSet<String> idShapes = new HashSet<>();
-       for( Trip t : r.getTrips()){
-           for(Shape s : t.getShape()){
-               if(!idShapes.add(s.getId())) continue;
-           }
+    //TODO-FINIRE.
+    public void snap(String name) {
+        GeometryFactory g = new GeometryFactory();
+        Route r = feed.getRouteByName(name);
+        HashSet<String> idShapes = new HashSet<>();
+        com.vividsolutions.jts.geom.Coordinate[] coordinates;
+        double tolerance;
+        GeometrySnapper gs;
+        MultiPoint path;
+        for( Trip t : r.getTrips()){
+            Shape s = t.getShape();
+            if(!idShapes.add(s.getId())) continue;
+            coordinates = new com.vividsolutions.jts.geom.Coordinate[s.getPoints().size()];
+            int i = 0;
+            for(Shape.Point p: s.getPoints()){
+                Point jp = p.getCoordinate();
+                coordinates[i++]=jp.getCoordinate();
+            }
+            path = g.createMultiPoint(coordinates);
+            for(StopTime st : t.getStopTimes()){
+                Point p = st.getStop().getCoordinate();
+                tolerance = DistanceOp.distance(path, p);
+                gs = new GeometrySnapper(path); 
+                path = (MultiPoint)gs.snapTo(p,tolerance+0.000000001 );
+            } 
+            showSnappedRoute(path);
+            break;
        }
     }
-    
+    /**
+     * draw lines on the map
+     * @param path multipoint of all the path
+     */
+    public void showSnappedRoute(MultiPoint path){
+        map.removeAllMapPolygons();
+        HashSet<String> idShapes = new HashSet<>();
+        try {
+            Image im = ImageIO.read(getClass().getClassLoader().getResourceAsStream("station.png"));
+            List<Coordinate> shapel = new LinkedList<>();
+            for( com.vividsolutions.jts.geom.Coordinate c : path.getCoordinates()){
+                shapel.add(new Coordinate( c.y,c.x));
+            }        
+            map.addMapPolygon(new MapLine(shapel));
+            for(Coordinate c : shapel){
+                map.addMapMarker(new MapMarkerDot(c));
+
+            }
+        }
+        catch(IOException ex){
+                System.err.println(ex.getMessage());
+        }
+    }
+
+    /*TODO: Togliere name, per ora è per un controllo*/ 
+    public void findSegment(java.awt.Point point,String name) {
+        GeometryFactory g;
+        PrecisionModel precision = new PrecisionModel(PrecisionModel.FLOATING);
+        int srid = 4326; //WGS 84
+        g = new GeometryFactory(precision, srid);
+        ICoordinate c = map.getPosition(point);
+        Coordinate coord;       
+        /*Trovo punto JTS*/
+        Point pnt = g.createPoint(new com.vividsolutions.jts.geom.Coordinate(c.getLon(),c.getLat()));
+        coord = new Coordinate(pnt.getY(),pnt.getX());
+        map.addMapMarker(new MapMarkerDot(coord));
+        HashSet<String> idShapes = new HashSet<>();
+        Route r = feed.getRouteByName(name);
+        com.vividsolutions.jts.geom.Coordinate[] coordinates;
+        MultiPoint path;
+        double dist,distMin;
+        Point min = null;
+        for(Trip t : r.getTrips()){
+            Shape s = t.getShape();
+            if(!idShapes.add(s.getId())) continue;
+            coordinates = new com.vividsolutions.jts.geom.Coordinate[t.getStopTimes().size()];
+            int i = 0;
+            distMin = Double.MAX_VALUE;
+            for(StopTime st : t.getStopTimes()){
+                Point p = st.getStop().getCoordinate();
+                coord = new Coordinate(p.getCoordinate().y,p.getCoordinate().x);
+                map.addMapMarker(new MapMarkerDot(coord));
+                dist = p.distance(pnt);
+                System.out.println("La distanza è: "+dist);
+                if(dist < distMin){
+                    distMin = dist;
+                    min = p;
+                    System.out.println("Ciao");
+                }//coordinates[i++]=p.getCoordinate();
+            }
+            coord = new Coordinate(min.getY(),min.getX());
+            MapMarkerDot mmd = new MapMarkerDot(coord);
+            mmd.setColor(Color.MAGENTA);
+            map.addMapMarker(mmd);
+            
+            /*path = g.createMultiPoint(coordinates); //insieme fermate
+            double dist = DistanceOp.distance(pnt, path);
+            for(StopTime st : t.getStopTimes()){
+                Point p = st.getStop().getCoordinate();
+                System.out.println("Fermata PSS");
+                if(DistanceOp.distance(p, pnt) == dist){
+                    Coordinate coord = new Coordinate(p.getY(),p.getX());
+                    MapMarkerDot mmd = new MapMarkerDot(coord);
+                    mmd.setColor(Color.blue);
+                    map.addMapMarker(mmd);
+                    System.out.println("Minimo Trovato");
+                    break;
+                }
+            }*/
+            break;
+        }
+    }
+        
     
     /*Classe fascia*/
     public static class Fascia{

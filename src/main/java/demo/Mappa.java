@@ -7,6 +7,10 @@ import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.geom.PrecisionModel;
 import com.vividsolutions.jts.geom.impl.CoordinateArraySequence;
+import java.awt.Component;
+import java.awt.event.MouseEvent;
+import javax.swing.event.MouseInputListener;
+import org.openstreetmap.gui.jmapviewer.DefaultMapController;
 import org.openstreetmap.gui.jmapviewer.JMapViewer;
 
 /*
@@ -27,6 +31,12 @@ public class Mappa extends javax.swing.JFrame {
         this.map = map;
         this.controller = controller;
         initComponents();
+        DefaultMapController contPos = new DefaultMapController(map){
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                controller.findSegment(e.getPoint(),(String)namesList.getSelectedItem());
+            }
+        };
     }
 
     public void setRouteList(String[] routes){
@@ -205,7 +215,7 @@ public class Mappa extends javax.swing.JFrame {
         jLabel1.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
         jLabel1.setText("GTFS");
 
-        snap.setText("jButton1");
+        snap.setText("Snap");
         snap.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 snapActionPerformed(evt);
@@ -475,4 +485,18 @@ public class Mappa extends javax.swing.JFrame {
     private javax.swing.JCheckBox wednesdayCheckBox;
     private javax.swing.JLabel weekDaysLabel;
     // End of variables declaration//GEN-END:variables
+
+    public void disableInput() {
+        for(Component c : selectionPanel.getComponents()){
+            c.setEnabled(false);    
+        }
+    }
+    
+    public void enableInput(){
+        for(Component c : selectionPanel.getComponents()){
+            c.setEnabled(true);    
+        }
+    }
+    
+    
 }
