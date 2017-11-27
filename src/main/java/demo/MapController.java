@@ -9,6 +9,7 @@ import demo.maputils.IconMarker;
 import demo.maputils.MapLine;
 import gtfs.Feed;
 import gtfs.FeedParser;
+import gtfs.entities.Calendar;
 import gtfs.entities.Route;
 import gtfs.entities.Shape;
 import gtfs.entities.Stop;
@@ -18,12 +19,19 @@ import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.Dialog;
 import java.awt.Image;
+import java.awt.event.MouseEvent;
 import java.io.File;
 import java.io.IOException;
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.TreeMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -48,6 +56,7 @@ import net.sf.dynamicreports.report.constant.HorizontalTextAlignment;
 import net.sf.dynamicreports.report.exception.DRException;
 
 import org.openstreetmap.gui.jmapviewer.Coordinate;
+import org.openstreetmap.gui.jmapviewer.DefaultMapController;
 import org.openstreetmap.gui.jmapviewer.JMapViewer;
 import org.openstreetmap.gui.jmapviewer.MapMarkerDot;
 import org.openstreetmap.gui.jmapviewer.interfaces.ICoordinate;
@@ -61,7 +70,9 @@ public class MapController {
     Feed feed;
     Mappa m;
     JMapViewer map;
-    
+    /*Control*/
+    HashMap<Point,Statistic> stats;
+    DefaultMapController contPos;
     /**
      * controller starts
      */
@@ -69,6 +80,16 @@ public class MapController {
         map = new JMapViewer();
         m = new Mappa(map,this); 
         m.setVisible(true);
+        contPos = new DefaultMapController(map){
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                try {
+                   findSegment(e.getPoint(),m.getSelectedRoute());
+                } catch (DRException ex) {
+                    Logger.getLogger(Mappa.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+        };
         
     }
     
@@ -89,6 +110,7 @@ public class MapController {
             String dir = file.getAbsolutePath();
             try {
                 setGTFS(dir);
+               
             } catch (IOException ex) {
                 Logger.getLogger(MapController.class.getName()).log(Level.SEVERE, null, ex);
             }
@@ -101,20 +123,6 @@ public class MapController {
      */
     public void setGTFS(String dir) throws IOException{
         m.disableInput();
-        
-        /*final JDialog dialog = new JDialog(m, "Wait"); 
-        dialog.setLocation(m.getWidth()/2, m.getHeight()/2- dialog.getHeight());
-        dialog.setUndecorated(false); 
-        
-        JProgressBar bar = new JProgressBar();
-        bar.setIndeterminate(true);
-        bar.setStringPainted(true);
-        bar.setString("Please wait...");
-        bar.setVisible(true);
-        dialog.add(bar);
-        
-        dialog.setSize(300,200);
-        dialog.setVisible(true);*/
         Cursor c = new Cursor(Cursor.WAIT_CURSOR);
         m.setCursor(c);
         SwingWorker<Void,Void> sw = new SwingWorker<Void,Void>(){
@@ -138,8 +146,6 @@ public class MapController {
             protected void done(){
                 m.enableInput();
                 m.setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
-                
-                //dialog.dispose();
             }
         };
         sw.execute();
@@ -176,6 +182,7 @@ public class MapController {
                 List<Coordinate> shapel = new LinkedList<>();
                 for(Shape.Point p : s.getPoints()){
                     c = new Coordinate( p.getLat(),p.getLon());
+                    map.addMapMarker(new MapMarkerDot(c));
                     shapel.add(c);                       
                 }
                 
@@ -184,68 +191,224 @@ public class MapController {
                 for(StopTime stopT : t.getStopTimes()){
                     stops.add(stopT.getStop());
                 }
-                break;
+                
             }
             for(Stop stop : stops){
                 map.addMapMarker(new IconMarker(new Coordinate(stop.getLat(),stop.getLon()), im));
             }
-             
         }
        
         catch(IOException ex){
                 System.err.println(ex.getMessage());
         }
     }
-    
-    public int[] calculateFrequency(Collection<Trip> trips, LineString line){
+
+
+    /*TODO: Togliere name, per ora è per un controllo*/ 
+    public void findSegment(java.awt.Point point,String name) throws DRException {
+        GeometryFactory g;
+        PrecisionModel precision = new PrecisionModel(PrecisionModel.FLOATING);
+        int srid = 4326; //WGS 84
+        g = new GeometryFactory(precision, srid);
+        ICoordinate c = map.getPosition(point);
+        Coordinate coord; 
+        Point pnt = g.createPoint(new com.vividsolutions.jts.geom.Coordinate(c.getLon(),c.getLat()));
+        m.disableInput();
+        m.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+              
        
+        
+        SwingWorker<Void,Void> sw = new SwingWorker<Void,Void>(){
+            @Override
+            protected Void doInBackground() throws Exception {
+                
+                HashSet<String> idShapes = new HashSet<>();
+                Route r = feed.getRouteByName(name);
+                com.vividsolutions.jts.geom.Coordinate[] coordinates;
+                MultiPoint path;
+                double dist,distMin;
+                distMin = Double.MAX_VALUE;
+                Point min = null;
+                Coordinate coord;
+                for(Trip t : r.getTrips()){
+                    Shape s = t.getShape();
+                    if(!idShapes.add(s.getId())) continue;
+                    coordinates = new com.vividsolutions.jts.geom.Coordinate[t.getStopTimes().size()];
+                    for(Shape.Point sp : s.getPoints()){
+                        Point p = sp.getCoordinate();
+                        dist = p.distance(pnt);
+                        if(dist < distMin){
+                            distMin = dist;
+                            min = p;
+                        }
+                    }
+                }
+                coord = new Coordinate(min.getY(),min.getX());
+                MapMarkerDot mmd = new MapMarkerDot(coord);
+                mmd.setColor(Color.MAGENTA);
+                map.addMapMarker(mmd);
+                filterByTime(min);
+                return null;
+            }
+            
+            @Override
+            protected void done(){
+                m.enableInput();
+                m.setCursor(Cursor.getDefaultCursor());
+            }
+                
+        };
+        sw.execute();
+        
+    }
+    
+     private void filterByTime(Point p) throws DRException {
+        Comparator<String> comp = StopTime.TIME_COMPARATOR;
+        String timeFrom = m.getTime(0);
+        String timeTo = m.getTime(1);
+        int timeF = Integer.parseInt(timeFrom.substring(0, timeFrom.indexOf(":")));
+        int timeT = Integer.parseInt(timeTo.substring(0, timeTo.indexOf(":")));
+        System.out.println("Tempo iniz,fine "+ timeF+", "+timeT);
+        Report report = new Report();
+        //int[] arr = hours.get(p);
+        Statistic s = stats.get(p);
+        int[] arr = s.getFreqs();
+        int k=0;
+        int[] r = new int[timeT-timeF+1];
+        for(int i = 0;i<arr.length;i++){
+                if(i>=timeF && i<timeT)
+                    r[k++] = arr[i];
+        }
+        report.showGraphic(r,timeF,s.getPullman());
+     }
+    
+    /*Nome route per controlli, Per ora sono punti per verif correttezza*/
+    
+    public void statistic(String name){
+        m.disableInput();
+        m.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+        //map.enableInputMethods(false);
+        SwingWorker<Void,Void> sw = new SwingWorker<Void,Void>(){
+            @Override
+            protected Void doInBackground() throws Exception {
+                /*if(hours==null) hours = new HashMap<>();
+                if(hours.isEmpty()){
+                    Collection<Trip> trips = feed.getRouteByName(name).getTrips();
+                    HashSet<Shape> shapes = new HashSet<>();
+                    for(Trip t : trips){
+                        if(!shapes.add(t.getShape())) continue;
+                        statisticSegment(t.getShape().getPoints(),trips);
+                    }
+                }*/
+                if(stats == null) stats = new HashMap<>();
+                if(stats.isEmpty()){
+                    Collection<Trip> trips = feed.getRouteByName(name).getTrips();
+                    HashSet<Shape> shapes = new HashSet<>();
+                    for(Trip t : trips){
+                        if(!shapes.add(t.getShape())) continue;
+                        statisticSegment(t.getShape().getPoints(),trips);
+                    }
+                }
+                return null;
+            }
+            
+            @Override
+            protected void done(){
+                m.enableInput();
+                m.setCursor(Cursor.getDefaultCursor());
+                //map.enableInputMethods(true);
+            }
+        };
+        sw.execute();
+    }
+    
+    public void statisticSegment(Collection<Shape.Point> segments,Collection<Trip> trips){
+        
+        for(Shape.Point ls : segments){
+            Point p = ls.getCoordinate();
+            //hours.put(p,calculateFrequency( trips, p));
+            stats.put(p,calculateFrequency(trips,p));
+        }
+    }
+    
+    /* Per ora considero il punto e non un segmento per testare la correttezza.*/    
+    public Statistic calculateFrequency(Collection<Trip> trips, Point line){
+        
         Point stop;
         StopTime correct;
         String timeArrival,time;
         TreeMap<Double,StopTime> distances = new TreeMap<>();
-        int[] freqs = new int[24];
+        int[] freqs = new int[25];
+        LocalDate from = m.getDate(0);
+        LocalDate to = m.getDate(1);
+        Statistic stat=null;
+        LocalDate localDate = from.plusDays(0);
+        DayOfWeek day;
         
-        
-        for(Trip t : trips){
-            
-            for(StopTime s : t.getStopTimes()){
-                stop = s.getStop().getCoordinate();
-                DistanceOp d = new DistanceOp(line,stop);
-                System.out.println("distanza= "+d.distance());
-                distances.put(d.distance(),s);     
-                //map.addMapMarker(new MapMarkerDot(new Coordinate(stop.getY(),stop.getX())));
+        do{
+            for(Trip t : trips){
+                stat = new Statistic();
+                stat.addPullman(t.getRoute().getName());
+                Calendar cal = t.getCalendar();
+                /*C'è per ora per fare controlli su NA*/
+                //if( (cal.getStartDate().isAfter(localDate) || (cal.getEndDate().isBefore(localDate)))) continue;
+                Map<DayOfWeek,Boolean> days = cal.getServiceDays();
+                Map<LocalDate,Boolean> exc = cal.getExceptions();
+                day = localDate.getDayOfWeek();
+                Boolean activeE,activeD;
+                /*Controllo se quel giorno è attivo*/
+                if( (activeE = exc.get(localDate) == null && ( (activeD=days.get(day))==null || activeD!=true)) || activeE == true ) 
+                    continue;
+                
+                for(StopTime s : t.getStopTimes()){
+                    stop = s.getStop().getCoordinate();
+                    DistanceOp d = new DistanceOp(line,stop);
+                    distances.put(d.distance(),s);     
+                    //map.addMapMarker(new MapMarkerDot(new Coordinate(stop.getY(),stop.getX())));
+                }
+                if(distances.isEmpty()) continue;
+                correct = distances.get(distances.firstKey());
+                timeArrival = correct.getArrival();
+                time = timeArrival.substring(0,timeArrival.indexOf(":"));
+                freqs[Integer.parseInt(time)%25]++;
+                distances.clear();
             }
-            correct = distances.get(distances.firstKey());
-            timeArrival = correct.getArrival();
-            time = timeArrival.substring(0,timeArrival.indexOf(":"));
-            freqs[Integer.parseInt(time)%24]++;
-            distances.clear();
-        }
-        return freqs;
-    }
-    
-    public void testDistance(String nameRoute){
-        com.vividsolutions.jts.geom.Coordinate[] cs = new com.vividsolutions.jts.geom.Coordinate[5];
-        for(int i = 40;i<45;i++){
-            cs[i-40] = new com.vividsolutions.jts.geom.Coordinate(i,5);
-        }
-        CoordinateSequence c = new CoordinateArraySequence(cs);
-        GeometryFactory gf = new GeometryFactory(new PrecisionModel(PrecisionModel.FLOATING),4326);
-        LineString l = new LineString(c, gf);
-        
-        Route r = feed.getRouteByName(nameRoute);
-        int arr[] = calculateFrequency(r.getTrips(),l);
-        
-        for(int i=0;i<arr.length;i++)
-            System.out.println("Array["+i+"]: "+arr[i] );
-            
-        try {
-            showGraphic(arr);
-        } catch (DRException ex) {
-            Logger.getLogger(MapController.class.getName()).log(Level.SEVERE, null, ex);
-        }
+            localDate = localDate.plusDays(1);
+        }while(!localDate.isAfter(to));
+        if(stat!=null) stat.setFreqs(freqs);
+        return stat;
     }
 
+    void clearStatistic() {
+        if(stats!=null && !stats.isEmpty()) stats.clear();
+    }
+   
+   
+    public static void main(String arg[]){
+        try {
+            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
+                if ("Nimbus".equals(info.getName())) {
+                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
+                    break;
+                }
+            }
+        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | javax.swing.UnsupportedLookAndFeelException ex) {
+            java.util.logging.Logger.getLogger(Mappa.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        }
+        MapController controller = new MapController();
+        controller.start();
+    }
+
+ 
+    
+    
+    
+    
+    
+    
+    
+        
+   
     //TODO-FINIRE.
     public void snap(String name) {
         GeometryFactory g = new GeometryFactory();
@@ -298,136 +461,4 @@ public class MapController {
                 System.err.println(ex.getMessage());
         }
     }
-
-    /*TODO: Togliere name, per ora è per un controllo*/ 
-    public void findSegment(java.awt.Point point,String name) {
-        GeometryFactory g;
-        PrecisionModel precision = new PrecisionModel(PrecisionModel.FLOATING);
-        int srid = 4326; //WGS 84
-        g = new GeometryFactory(precision, srid);
-        ICoordinate c = map.getPosition(point);
-        Coordinate coord;       
-        /*Trovo punto JTS*/
-        Point pnt = g.createPoint(new com.vividsolutions.jts.geom.Coordinate(c.getLon(),c.getLat()));
-        coord = new Coordinate(pnt.getY(),pnt.getX());
-        map.addMapMarker(new MapMarkerDot(coord));
-        HashSet<String> idShapes = new HashSet<>();
-        Route r = feed.getRouteByName(name);
-        com.vividsolutions.jts.geom.Coordinate[] coordinates;
-        MultiPoint path;
-        double dist,distMin;
-        Point min = null;
-        for(Trip t : r.getTrips()){
-            Shape s = t.getShape();
-            if(!idShapes.add(s.getId())) continue;
-            coordinates = new com.vividsolutions.jts.geom.Coordinate[t.getStopTimes().size()];
-            int i = 0;
-            distMin = Double.MAX_VALUE;
-            for(StopTime st : t.getStopTimes()){
-                Point p = st.getStop().getCoordinate();
-                coord = new Coordinate(p.getCoordinate().y,p.getCoordinate().x);
-                map.addMapMarker(new MapMarkerDot(coord));
-                dist = p.distance(pnt);
-                System.out.println("La distanza è: "+dist);
-                if(dist < distMin){
-                    distMin = dist;
-                    min = p;
-                    System.out.println("Ciao");
-                }//coordinates[i++]=p.getCoordinate();
-            }
-            coord = new Coordinate(min.getY(),min.getX());
-            MapMarkerDot mmd = new MapMarkerDot(coord);
-            mmd.setColor(Color.MAGENTA);
-            map.addMapMarker(mmd);
-            
-            /*path = g.createMultiPoint(coordinates); //insieme fermate
-            double dist = DistanceOp.distance(pnt, path);
-            for(StopTime st : t.getStopTimes()){
-                Point p = st.getStop().getCoordinate();
-                System.out.println("Fermata PSS");
-                if(DistanceOp.distance(p, pnt) == dist){
-                    Coordinate coord = new Coordinate(p.getY(),p.getX());
-                    MapMarkerDot mmd = new MapMarkerDot(coord);
-                    mmd.setColor(Color.blue);
-                    map.addMapMarker(mmd);
-                    System.out.println("Minimo Trovato");
-                    break;
-                }
-            }*/
-            break;
-        }
-    }
-        
-    
-    /*Classe fascia*/
-    public static class Fascia{
-        private int hour;
-        private int freq;
-
-        public Fascia(int hour, int freq) {
-            this.hour = hour;
-            this.freq = freq;
-        }
-        
-        public int getHour() {
-            return hour;
-        }
-
-        public int getFreq() {
-            return freq;
-        }
-    }
-    
-    /*Deve esserci una collection di classe FASCIA.*/
-    private void showGraphic(int[] freqs) throws DRException {
-        Collection<Fascia> coll = new LinkedList<>();//create collection
-        for(int i=0;i<freqs.length;i++)
-            coll.add(new Fascia(i,freqs[i]));
-        /*Set styles*/
-        StyleBuilder boldStyle = stl.style().bold();
-        StyleBuilder columnStyle = stl.style().setHorizontalTextAlignment(HorizontalTextAlignment.CENTER);
-        StyleBuilder boldCenteredStyle = stl.style(boldStyle).setHorizontalTextAlignment(HorizontalTextAlignment.CENTER);
-        StyleBuilder columnTitleStyle  = stl.style(boldCenteredStyle)
-		                                    .setBorder(stl.pen1Point())
-		                                    .setBackgroundColor(Color.LIGHT_GRAY);
-        
-        TextColumnBuilder<Integer> hourColumn = col.column("Hour","hour",type.integerType());
-        TextColumnBuilder<Integer> freqColumn = col.column("Frequency","freq",type.integerType());
-        /*Create chart 3D*/
-        XyLineChartBuilder graphic = cht.xyLineChart()
-                                        .setTitle("Frequency chart")
-                                        .setXValue(hourColumn)
-                                        .setXAxisFormat(cht.axisFormat().setRangeMaxValueExpression(23).setLabel("Hours"))
-                                        .setYAxisFormat(cht.axisFormat().setLabel("Number of bus"))
-                                        .series(cht.xySerie(freqColumn));
-                                        
-        
-        JasperReportBuilder jrb = report()
-                .setColumnTitleStyle(columnTitleStyle)
-                .setColumnStyle(columnStyle)
-                .highlightDetailEvenRows()
-                .title(cmp.text("Report frequences"))
-                .columns( hourColumn,freqColumn)
-                .summary(graphic)
-                .setDataSource(coll)
-                .show(false);
-        
-    }
-    
-    public static void main(String arg[]){
-        try {
-            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
-                if ("Nimbus".equals(info.getName())) {
-                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
-                    break;
-                }
-            }
-        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | javax.swing.UnsupportedLookAndFeelException ex) {
-            java.util.logging.Logger.getLogger(Mappa.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        }
-        MapController controller = new MapController();
-        controller.start();
-    }
-
-   
 }

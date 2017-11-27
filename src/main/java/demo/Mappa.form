@@ -133,43 +133,22 @@
               <Group type="102" attributes="0">
                   <EmptySpace max="-2" attributes="0"/>
                   <Group type="103" groupAlignment="0" attributes="0">
-                      <Component id="weekDaysLabel" alignment="0" min="-2" max="-2" attributes="0"/>
                       <Group type="102" alignment="0" attributes="0">
-                          <Group type="103" groupAlignment="1" max="-2" attributes="0">
+                          <EmptySpace min="-2" pref="35" max="-2" attributes="0"/>
+                          <Group type="103" groupAlignment="0" attributes="0">
+                              <Component id="chooser" alignment="0" min="-2" pref="180" max="-2" attributes="0"/>
                               <Group type="102" alignment="0" attributes="0">
-                                  <EmptySpace min="-2" pref="35" max="-2" attributes="0"/>
+                                  <EmptySpace min="2" pref="2" max="-2" attributes="0"/>
                                   <Group type="103" groupAlignment="0" attributes="0">
-                                      <Component id="chooser" alignment="0" min="-2" pref="180" max="-2" attributes="0"/>
-                                      <Group type="102" alignment="0" attributes="0">
-                                          <EmptySpace min="2" pref="2" max="-2" attributes="0"/>
-                                          <Group type="103" groupAlignment="0" attributes="0">
-                                              <Component id="namesList" min="-2" pref="82" max="-2" attributes="0"/>
-                                              <Group type="102" attributes="0">
-                                                  <Component id="show" min="-2" pref="181" max="-2" attributes="0"/>
-                                                  <EmptySpace max="32767" attributes="0"/>
-                                                  <Component id="clearButton" min="-2" pref="76" max="-2" attributes="0"/>
-                                              </Group>
-                                          </Group>
+                                      <Component id="namesList" min="-2" pref="82" max="-2" attributes="0"/>
+                                      <Group type="102" attributes="0">
+                                          <Component id="show" min="-2" pref="181" max="-2" attributes="0"/>
+                                          <EmptySpace min="-2" pref="37" max="-2" attributes="0"/>
+                                          <Component id="clearButton" min="-2" pref="76" max="-2" attributes="0"/>
                                       </Group>
                                   </Group>
                               </Group>
-                              <Group type="102" alignment="0" attributes="0">
-                                  <EmptySpace min="-2" pref="28" max="-2" attributes="0"/>
-                                  <Component id="mondayCheckBox" min="-2" max="-2" attributes="0"/>
-                                  <EmptySpace type="separate" max="-2" attributes="0"/>
-                                  <Component id="tuesdayCheckBox" min="-2" max="-2" attributes="0"/>
-                                  <EmptySpace type="separate" max="-2" attributes="0"/>
-                                  <Component id="wednesdayCheckBox" min="-2" max="-2" attributes="0"/>
-                                  <EmptySpace type="separate" max="-2" attributes="0"/>
-                                  <Component id="thursdayCheckBox" min="-2" max="-2" attributes="0"/>
-                                  <EmptySpace type="separate" max="-2" attributes="0"/>
-                                  <Component id="fridayCheckBox" min="-2" max="-2" attributes="0"/>
-                              </Group>
                           </Group>
-                          <EmptySpace type="separate" max="-2" attributes="0"/>
-                          <Component id="saturdayCheckBox" min="-2" max="-2" attributes="0"/>
-                          <EmptySpace type="separate" max="-2" attributes="0"/>
-                          <Component id="sundayCheckBox" min="-2" max="-2" attributes="0"/>
                       </Group>
                       <Component id="jLabel1" alignment="0" min="-2" max="-2" attributes="0"/>
                       <Component id="routeLabel" alignment="0" min="-2" pref="45" max="-2" attributes="0"/>
@@ -241,19 +220,7 @@
                       <Component id="show" alignment="3" min="-2" max="-2" attributes="0"/>
                       <Component id="clearButton" alignment="3" min="-2" max="-2" attributes="0"/>
                   </Group>
-                  <EmptySpace min="-2" pref="25" max="-2" attributes="0"/>
-                  <Component id="weekDaysLabel" min="-2" max="-2" attributes="0"/>
-                  <EmptySpace min="-2" pref="10" max="-2" attributes="0"/>
-                  <Group type="103" groupAlignment="3" attributes="0">
-                      <Component id="mondayCheckBox" alignment="3" min="-2" max="-2" attributes="0"/>
-                      <Component id="tuesdayCheckBox" alignment="3" min="-2" max="-2" attributes="0"/>
-                      <Component id="wednesdayCheckBox" alignment="3" min="-2" max="-2" attributes="0"/>
-                      <Component id="thursdayCheckBox" alignment="3" min="-2" max="-2" attributes="0"/>
-                      <Component id="fridayCheckBox" alignment="3" min="-2" max="-2" attributes="0"/>
-                      <Component id="saturdayCheckBox" alignment="3" min="-2" max="-2" attributes="0"/>
-                      <Component id="sundayCheckBox" alignment="3" min="-2" max="-2" attributes="0"/>
-                  </Group>
-                  <EmptySpace type="unrelated" max="-2" attributes="0"/>
+                  <EmptySpace min="-2" pref="79" max="-2" attributes="0"/>
                   <Component id="jLabel6" min="-2" max="-2" attributes="0"/>
                   <EmptySpace type="unrelated" min="-2" max="-2" attributes="0"/>
                   <Group type="103" groupAlignment="3" attributes="0">
@@ -296,6 +263,9 @@
               <Connection code="new javax.swing.DefaultComboBoxModel&lt;&gt;()" type="code"/>
             </Property>
           </Properties>
+          <Events>
+            <EventHandler event="itemStateChanged" listener="java.awt.event.ItemListener" parameters="java.awt.event.ItemEvent" handler="namesListItemStateChanged"/>
+          </Events>
           <AuxValues>
             <AuxValue name="JavaCodeGenerator_TypeParameters" type="java.lang.String" value="&lt;String&gt;"/>
           </AuxValues>
@@ -324,49 +294,6 @@
             <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="chooserActionPerformed"/>
           </Events>
         </Component>
-        <Component class="javax.swing.JCheckBox" name="mondayCheckBox">
-          <Properties>
-            <Property name="text" type="java.lang.String" value="MON"/>
-          </Properties>
-        </Component>
-        <Component class="javax.swing.JCheckBox" name="tuesdayCheckBox">
-          <Properties>
-            <Property name="text" type="java.lang.String" value="TUE"/>
-          </Properties>
-        </Component>
-        <Component class="javax.swing.JCheckBox" name="wednesdayCheckBox">
-          <Properties>
-            <Property name="text" type="java.lang.String" value="WED"/>
-          </Properties>
-        </Component>
-        <Component class="javax.swing.JCheckBox" name="thursdayCheckBox">
-          <Properties>
-            <Property name="text" type="java.lang.String" value="THU"/>
-          </Properties>
-        </Component>
-        <Component class="javax.swing.JCheckBox" name="fridayCheckBox">
-          <Properties>
-            <Property name="text" type="java.lang.String" value="FRI"/>
-          </Properties>
-        </Component>
-        <Component class="javax.swing.JCheckBox" name="saturdayCheckBox">
-          <Properties>
-            <Property name="text" type="java.lang.String" value="SAT"/>
-          </Properties>
-        </Component>
-        <Component class="javax.swing.JCheckBox" name="sundayCheckBox">
-          <Properties>
-            <Property name="text" type="java.lang.String" value="SUN"/>
-          </Properties>
-        </Component>
-        <Component class="javax.swing.JLabel" name="weekDaysLabel">
-          <Properties>
-            <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-              <Font name="Tahoma" size="11" style="1"/>
-            </Property>
-            <Property name="text" type="java.lang.String" value="Week days "/>
-          </Properties>
-        </Component>
         <Component class="javax.swing.JLabel" name="jLabel3">
           <Properties>
             <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
@@ -388,6 +315,7 @@
         <Component class="javax.swing.JButton" name="availabilityButton">
           <Properties>
             <Property name="text" type="java.lang.String" value="Availability"/>
+            <Property name="enabled" type="boolean" value="false"/>
           </Properties>
           <Events>
             <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="availabilityButtonActionPerformed"/>
@@ -416,8 +344,14 @@
           </Properties>
         </Component>
         <Component class="org.jdesktop.swingx.JXDatePicker" name="dateFrom">
+          <Events>
+            <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="dateFromActionPerformed"/>
+          </Events>
         </Component>
         <Component class="org.jdesktop.swingx.JXDatePicker" name="dateTo">
+          <Events>
+            <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="dateToActionPerformed"/>
+          </Events>
         </Component>
         <Component class="javax.swing.JLabel" name="dateFromLabel">
           <Properties>

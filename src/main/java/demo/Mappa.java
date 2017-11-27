@@ -8,8 +8,17 @@ import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.geom.PrecisionModel;
 import com.vividsolutions.jts.geom.impl.CoordinateArraySequence;
 import java.awt.Component;
+import java.awt.event.ItemEvent;
 import java.awt.event.MouseEvent;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.Date;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.swing.event.MouseInputListener;
+import net.sf.dynamicreports.report.exception.DRException;
 import org.openstreetmap.gui.jmapviewer.DefaultMapController;
 import org.openstreetmap.gui.jmapviewer.JMapViewer;
 
@@ -31,12 +40,8 @@ public class Mappa extends javax.swing.JFrame {
         this.map = map;
         this.controller = controller;
         initComponents();
-        DefaultMapController contPos = new DefaultMapController(map){
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                controller.findSegment(e.getPoint(),(String)namesList.getSelectedItem());
-            }
-        };
+        
+        
     }
 
     public void setRouteList(String[] routes){
@@ -63,14 +68,6 @@ public class Mappa extends javax.swing.JFrame {
         clearButton = new javax.swing.JButton();
         routeLabel = new javax.swing.JLabel();
         chooser = new javax.swing.JButton();
-        mondayCheckBox = new javax.swing.JCheckBox();
-        tuesdayCheckBox = new javax.swing.JCheckBox();
-        wednesdayCheckBox = new javax.swing.JCheckBox();
-        thursdayCheckBox = new javax.swing.JCheckBox();
-        fridayCheckBox = new javax.swing.JCheckBox();
-        saturdayCheckBox = new javax.swing.JCheckBox();
-        sundayCheckBox = new javax.swing.JCheckBox();
-        weekDaysLabel = new javax.swing.JLabel();
         jLabel3 = new javax.swing.JLabel();
         timeFromLabel = new javax.swing.JLabel();
         timeToLabel = new javax.swing.JLabel();
@@ -143,6 +140,11 @@ public class Mappa extends javax.swing.JFrame {
         });
 
         namesList.setModel(new javax.swing.DefaultComboBoxModel<>());
+        namesList.addItemListener(new java.awt.event.ItemListener() {
+            public void itemStateChanged(java.awt.event.ItemEvent evt) {
+                namesListItemStateChanged(evt);
+            }
+        });
 
         clearButton.setText("Clear");
         clearButton.addActionListener(new java.awt.event.ActionListener() {
@@ -161,23 +163,6 @@ public class Mappa extends javax.swing.JFrame {
             }
         });
 
-        mondayCheckBox.setText("MON");
-
-        tuesdayCheckBox.setText("TUE");
-
-        wednesdayCheckBox.setText("WED");
-
-        thursdayCheckBox.setText("THU");
-
-        fridayCheckBox.setText("FRI");
-
-        saturdayCheckBox.setText("SAT");
-
-        sundayCheckBox.setText("SUN");
-
-        weekDaysLabel.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        weekDaysLabel.setText("Week days ");
-
         jLabel3.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
         jLabel3.setText("Time");
 
@@ -186,6 +171,7 @@ public class Mappa extends javax.swing.JFrame {
         timeToLabel.setText("To: ");
 
         availabilityButton.setText("Availability");
+        availabilityButton.setEnabled(false);
         availabilityButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 availabilityButtonActionPerformed(evt);
@@ -205,6 +191,18 @@ public class Mappa extends javax.swing.JFrame {
 
         jLabel6.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
         jLabel6.setText("Date");
+
+        dateFrom.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                dateFromActionPerformed(evt);
+            }
+        });
+
+        dateTo.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                dateToActionPerformed(evt);
+            }
+        });
 
         dateFromLabel.setText("From:");
 
@@ -229,36 +227,18 @@ public class Mappa extends javax.swing.JFrame {
             .addGroup(selectionPanelLayout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(selectionPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(weekDaysLabel)
                     .addGroup(selectionPanelLayout.createSequentialGroup()
-                        .addGroup(selectionPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                            .addGroup(javax.swing.GroupLayout.Alignment.LEADING, selectionPanelLayout.createSequentialGroup()
-                                .addGap(35, 35, 35)
+                        .addGap(35, 35, 35)
+                        .addGroup(selectionPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(chooser, javax.swing.GroupLayout.PREFERRED_SIZE, 180, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addGroup(selectionPanelLayout.createSequentialGroup()
+                                .addGap(2, 2, 2)
                                 .addGroup(selectionPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addComponent(chooser, javax.swing.GroupLayout.PREFERRED_SIZE, 180, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addComponent(namesList, javax.swing.GroupLayout.PREFERRED_SIZE, 82, javax.swing.GroupLayout.PREFERRED_SIZE)
                                     .addGroup(selectionPanelLayout.createSequentialGroup()
-                                        .addGap(2, 2, 2)
-                                        .addGroup(selectionPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                            .addComponent(namesList, javax.swing.GroupLayout.PREFERRED_SIZE, 82, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                            .addGroup(selectionPanelLayout.createSequentialGroup()
-                                                .addComponent(show, javax.swing.GroupLayout.PREFERRED_SIZE, 181, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                                .addComponent(clearButton, javax.swing.GroupLayout.PREFERRED_SIZE, 76, javax.swing.GroupLayout.PREFERRED_SIZE))))))
-                            .addGroup(javax.swing.GroupLayout.Alignment.LEADING, selectionPanelLayout.createSequentialGroup()
-                                .addGap(28, 28, 28)
-                                .addComponent(mondayCheckBox)
-                                .addGap(18, 18, 18)
-                                .addComponent(tuesdayCheckBox)
-                                .addGap(18, 18, 18)
-                                .addComponent(wednesdayCheckBox)
-                                .addGap(18, 18, 18)
-                                .addComponent(thursdayCheckBox)
-                                .addGap(18, 18, 18)
-                                .addComponent(fridayCheckBox)))
-                        .addGap(18, 18, 18)
-                        .addComponent(saturdayCheckBox)
-                        .addGap(18, 18, 18)
-                        .addComponent(sundayCheckBox))
+                                        .addComponent(show, javax.swing.GroupLayout.PREFERRED_SIZE, 181, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                        .addGap(37, 37, 37)
+                                        .addComponent(clearButton, javax.swing.GroupLayout.PREFERRED_SIZE, 76, javax.swing.GroupLayout.PREFERRED_SIZE))))))
                     .addComponent(jLabel1)
                     .addComponent(routeLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 45, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addGroup(selectionPanelLayout.createSequentialGroup()
@@ -316,18 +296,7 @@ public class Mappa extends javax.swing.JFrame {
                 .addGroup(selectionPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(show)
                     .addComponent(clearButton))
-                .addGap(25, 25, 25)
-                .addComponent(weekDaysLabel)
-                .addGap(10, 10, 10)
-                .addGroup(selectionPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(mondayCheckBox)
-                    .addComponent(tuesdayCheckBox)
-                    .addComponent(wednesdayCheckBox)
-                    .addComponent(thursdayCheckBox)
-                    .addComponent(fridayCheckBox)
-                    .addComponent(saturdayCheckBox)
-                    .addComponent(sundayCheckBox))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addGap(79, 79, 79)
                 .addComponent(jLabel6)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addGroup(selectionPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
@@ -380,15 +349,33 @@ public class Mappa extends javax.swing.JFrame {
         int startTime = timeFrom.getSelectedIndex();
         String[] times = new String[24-startTime];
         int j=0;
-        for(int i = startTime;i<24;i++){
+        for(int i = startTime+1;i<25;i++){
             times[j++] = i+":00";
         }
         timeTo.setModel(new javax.swing.DefaultComboBoxModel<>(times));
     }//GEN-LAST:event_timeFromItemStateChanged
 
+    
+    /**
+     * 
+     * @param d d==0 from, d==1 to
+     * @return 
+     */
+    public LocalDate getDate(int d){
+        Date date = (d==0)? dateFrom.getDate() : dateTo.getDate();
+        Instant instant = Instant.ofEpochMilli(date.getTime());
+        LocalDate localDate = LocalDateTime.ofInstant(instant, ZoneId.systemDefault()).toLocalDate();
+        return localDate;
+    }
+    
+    public String getTime(int t) {
+        String time = (t==0)? (String)timeFrom.getSelectedItem() : (String)timeTo.getSelectedItem();
+        return time;
+    }
+    
     private void availabilityButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_availabilityButtonActionPerformed
         String nameRoute = (String)namesList.getSelectedItem();
-        controller.testDistance(nameRoute);
+        controller.statistic(nameRoute);
         
         
         /*Date date = dateFrom.getDate();
@@ -450,7 +437,33 @@ public class Mappa extends javax.swing.JFrame {
        controller.snap(name);
     }//GEN-LAST:event_snapActionPerformed
 
-    
+    private void dateFromActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_dateFromActionPerformed
+        Date d = dateFrom.getDate();
+        dateTo.getMonthView().setLowerBound(d);
+        Date d2 = dateTo.getDate();
+        if(d == null) availabilityButton.setEnabled(false);
+        else{
+            if(d2 == null) dateTo.setDate(d);
+            availabilityButton.setEnabled(true);
+        }
+        controller.clearStatistic();
+    }//GEN-LAST:event_dateFromActionPerformed
+
+    private void dateToActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_dateToActionPerformed
+        Date d = dateFrom.getDate();
+        Date d2 = dateTo.getDate();
+        if(d!=null && d2!=null) availabilityButton.setEnabled(true);
+        else availabilityButton.setEnabled(false);
+        controller.clearStatistic();
+    }//GEN-LAST:event_dateToActionPerformed
+
+    private void namesListItemStateChanged(java.awt.event.ItemEvent evt) {//GEN-FIRST:event_namesListItemStateChanged
+        controller.clearStatistic();
+    }//GEN-LAST:event_namesListItemStateChanged
+
+    public String getSelectedRoute(){
+        return (String)namesList.getSelectedItem();
+    }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton availabilityButton;
@@ -460,7 +473,6 @@ public class Mappa extends javax.swing.JFrame {
     private javax.swing.JLabel dateFromLabel;
     private org.jdesktop.swingx.JXDatePicker dateTo;
     private javax.swing.JLabel dateToLabel;
-    private javax.swing.JCheckBox fridayCheckBox;
     private javax.swing.JDialog jDialog1;
     private javax.swing.JDialog jDialog2;
     private javax.swing.JDialog jDialog3;
@@ -468,35 +480,30 @@ public class Mappa extends javax.swing.JFrame {
     private javax.swing.JLabel jLabel3;
     private javax.swing.JLabel jLabel6;
     private javax.swing.JPanel mapPanel;
-    private javax.swing.JCheckBox mondayCheckBox;
     private javax.swing.JComboBox<String> namesList;
     private javax.swing.JLabel routeLabel;
-    private javax.swing.JCheckBox saturdayCheckBox;
     private javax.swing.JPanel selectionPanel;
     private javax.swing.JButton show;
     private javax.swing.JButton snap;
-    private javax.swing.JCheckBox sundayCheckBox;
-    private javax.swing.JCheckBox thursdayCheckBox;
     private javax.swing.JComboBox<String> timeFrom;
     private javax.swing.JLabel timeFromLabel;
     private javax.swing.JComboBox<String> timeTo;
     private javax.swing.JLabel timeToLabel;
-    private javax.swing.JCheckBox tuesdayCheckBox;
-    private javax.swing.JCheckBox wednesdayCheckBox;
-    private javax.swing.JLabel weekDaysLabel;
     // End of variables declaration//GEN-END:variables
 
     public void disableInput() {
         for(Component c : selectionPanel.getComponents()){
-            c.setEnabled(false);    
+            if(c!=availabilityButton) c.setEnabled(false);    
         }
     }
     
     public void enableInput(){
         for(Component c : selectionPanel.getComponents()){
-            c.setEnabled(true);    
+            if(c!=availabilityButton) c.setEnabled(true);    
         }
     }
+
+   
     
     
 }
