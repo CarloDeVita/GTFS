@@ -232,8 +232,10 @@ public class MapController {
                 mmd.setColor(Color.MAGENTA);
                 map.addMapMarker(mmd);
                 //filterByTime(min);
-                /*Report report = new Report();
-                report.showGraphic(r,timeF,s.getPullman());*/
+                Report report = new Report();
+                Statistic stat = stats.get(min);
+                report.showGraphic(stat);
+                //report.showGraphic(r,timeF,s.getPullman());*/
                 return null;
             }
             
@@ -280,7 +282,6 @@ public class MapController {
                 HashSet<Shape> shapes = new HashSet<>();
                 for(Trip t : trips){
                     if(!shapes.add(t.getShape())) continue;
-                        System.out.println("Dim: "+t.getShape().getPoints().size());
                         statisticSegment(t.getShape().getPoints(),trips);
                     }
               

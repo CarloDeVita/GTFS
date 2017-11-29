@@ -53,6 +53,16 @@ public class Statistic {
         System.out.println("S: "+start+" E: "+end);
     }
 
+    public int getStart() {
+        return start;
+    }
+
+    public int getEnd() {
+        return end;
+    }
+    
+    
+    
     public HashSet<String> getPullman() {
         return pullman;
     }
