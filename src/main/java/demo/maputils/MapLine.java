@@ -10,24 +10,34 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Point;
 import java.awt.geom.Path2D;
+import java.util.LinkedList;
 import java.util.List;
 import org.openstreetmap.gui.jmapviewer.MapPolygonImpl;
 import org.openstreetmap.gui.jmapviewer.interfaces.ICoordinate;
 
 public class MapLine extends MapPolygonImpl {
-
+    Graphics2D g2d;
+    Path2D path2d;
     public MapLine(List<? extends ICoordinate> points) {
-        super( points);
+        super(points);
     }
-
+    
+    
+    
+    public void repaint(Color c){
+        g2d.setColor(c);
+        g2d.draw(path2d);
+    }
+    
     @Override
     public void paint(Graphics g, List<Point> points) {
-        Graphics2D g2d = (Graphics2D) g.create();
-        g2d.setColor(Color.RED);
+        if (g2d==null){ 
+            g2d = (Graphics2D) g.create();
+            g2d.setColor(Color.RED);
+        }
         g2d.setStroke(getStroke());
-        Path2D path = buildPath(points);
-        g2d.draw(path);
-        g2d.dispose();
+        path2d = buildPath(points);
+        g2d.draw(path2d);
     }
 
     private Path2D buildPath(List<Point> points) {

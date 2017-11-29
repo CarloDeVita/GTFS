@@ -69,13 +69,12 @@ public class Report {
     
     /*Deve esserci una collection di classe FASCIA.*/
     public void showGraphic(int[] freqs, int start, Set<String> pullman) throws DRException {
+        System.out.println("sto qui");
         SubreportBuilder freqTab = cmp.subreport(freqsTab(freqs, start));
         SubreportBuilder namesP = cmp.subreport(pullmanTab(pullman));
         JasperReportBuilder jrb = report()
                 .summary(freqTab,namesP)
                 .show(false);
-                
-        
     }
     
     public JasperReportBuilder pullmanTab(Set<String> pullmans) throws DRException{

@@ -446,7 +446,7 @@ public class Mappa extends javax.swing.JFrame {
             if(d2 == null) dateTo.setDate(d);
             availabilityButton.setEnabled(true);
         }
-        controller.clearStatistic();
+        //controller.clearStatistic();
     }//GEN-LAST:event_dateFromActionPerformed
 
     private void dateToActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_dateToActionPerformed
@@ -454,11 +454,11 @@ public class Mappa extends javax.swing.JFrame {
         Date d2 = dateTo.getDate();
         if(d!=null && d2!=null) availabilityButton.setEnabled(true);
         else availabilityButton.setEnabled(false);
-        controller.clearStatistic();
+      //  controller.clearStatistic();
     }//GEN-LAST:event_dateToActionPerformed
 
     private void namesListItemStateChanged(java.awt.event.ItemEvent evt) {//GEN-FIRST:event_namesListItemStateChanged
-        controller.clearStatistic();
+       // controller.clearStatistic();
     }//GEN-LAST:event_namesListItemStateChanged
 
     public String getSelectedRoute(){
