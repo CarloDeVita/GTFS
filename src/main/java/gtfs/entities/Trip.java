@@ -247,9 +247,10 @@ public class Trip extends GTFS{
      * 
      * @return a read-only view of the stop times of the trip.
      */
-    @OneToMany(targetEntity=StopTime.class, mappedBy="trip")
+    /*@OneToMany(targetEntity=StopTime.class, mappedBy="trip")
     @SortComparator(StopTime.ArrivalComparator.class)
-    @Cascade(value={CascadeType.DELETE})
+    @Cascade(value={CascadeType.DELETE})*/
+    @Transient
     public SortedSet<StopTime> getStopTimes(){
         if(stopTimes==null)
             setStopTimes(new TreeSet<>(StopTime.SEQUENCE_COMPARATOR));

@@ -10,11 +10,10 @@ import java.util.Map;
 import javax.persistence.CollectionTable;
 import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
-import javax.persistence.EnumType;
 import javax.persistence.Id;
-import javax.persistence.MapKeyEnumerated;
 import javax.persistence.MapKeyJoinColumn;
 import javax.persistence.Table;
+import javax.persistence.Transient;
 
 /**
  * A service availability schedule.
@@ -59,7 +58,7 @@ public class Calendar extends GTFS{
      * A calendar constructor without the service days.
      * Service will be set inactive for all the days of the week.
      * 
-     * @param id
+     * @param id the id of the schedule. Must be not null.
      * @param startDate the first date of the service. Null is replaced with {@link #MIN_DATE}.
      * @param endDate the last date of the service. Null is replaced with {@link #MAX_DATE}.
      * @throws IllegalArgumentException if id is null or if the start date comes after the end date.
@@ -102,15 +101,73 @@ public class Calendar extends GTFS{
         }
     }
 
-    @ElementCollection
-    @MapKeyEnumerated(EnumType.ORDINAL)
-    @javax.persistence.Transient
+    @Transient
     public Map<DayOfWeek, Boolean> getServiceDays() {
         if(serviceDays == null)
             setServiceDays(new EnumMap<>(DayOfWeek.class));
         return Collections.unmodifiableMap(serviceDays);
     }
+    
+    public boolean getMonday(){
+        return serviceDays.get(DayOfWeek.MONDAY);
+    }
+    
+    public void setMonday(boolean active){
+        serviceDays.put(DayOfWeek.MONDAY, active);
+    }
+    
+    public boolean getTuesday(){
+        return serviceDays.get(DayOfWeek.TUESDAY);
+    }
+    
+    public void setTuesday(boolean active){
+        serviceDays.put(DayOfWeek.TUESDAY, active);
+    }
+    
+    public boolean getWednesday(){
+        return serviceDays.get(DayOfWeek.WEDNESDAY);
+    }
+    
+    public void setWednesday(boolean active){
+        serviceDays.put(DayOfWeek.WEDNESDAY, active);
+    }
+    
+    public boolean getThursday(){
+        return serviceDays.get(DayOfWeek.THURSDAY);
+    }
+    
+    public void setThursday(boolean active){
+        serviceDays.put(DayOfWeek.THURSDAY, active);
+    }
+    
+    public boolean getFriday(){
+        return serviceDays.get(DayOfWeek.FRIDAY);
+    }
+    
+    public void setFriday(boolean active){
+        serviceDays.put(DayOfWeek.FRIDAY, active);
+    }
+    
+    public boolean getSaturday(){
+        return serviceDays.get(DayOfWeek.SATURDAY);
+    }
+    
+    public void setSaturday(boolean active){
+        serviceDays.put(DayOfWeek.SATURDAY, active);
+    }
 
+    public boolean getSunday(){
+        return serviceDays.get(DayOfWeek.SUNDAY);
+    }
+    
+    public void setSunday(boolean active){
+        serviceDays.put(DayOfWeek.SUNDAY, active);
+    }
+    
+    public boolean isActive(DayOfWeek day){
+        return serviceDays.get(day);
+    }
+    
     /**
      * 
      * @return  a read-only map containing specific dates of activity or inactivity.

@@ -11,6 +11,7 @@ import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
+import javax.persistence.Transient;
 import org.hibernate.annotations.Cascade;
 
 /**
@@ -190,8 +191,9 @@ public class Agency extends GTFS implements Serializable{
      * 
      * @return a read-only view of the routes associated with the agency.
      */
-    @OneToMany(targetEntity=Route.class, mappedBy="agency")
-    @Cascade(value={CascadeType.DELETE})
+    /*@OneToMany(targetEntity=Route.class, mappedBy="agency")
+    @Cascade(value={CascadeType.DELETE})*/
+    @Transient
     public Set<Route> getRoutes() {
         return Collections.unmodifiableSet(routes);
     }

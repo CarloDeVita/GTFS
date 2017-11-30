@@ -286,8 +286,9 @@ public class Route extends GTFS{
      * 
      * @return the read-only view of all the trips belonging to the route.
      */
-    @OneToMany(targetEntity=Trip.class, mappedBy="route")
-    @Cascade(value={CascadeType.DELETE})
+    /*@OneToMany(targetEntity=Trip.class, mappedBy="route")
+    @Cascade(value={CascadeType.DELETE})*/
+    @Transient
     public Set<Trip> getTrips() {
         if(trips==null)
             setTrips(new HashSet<>());
