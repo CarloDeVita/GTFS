@@ -1,55 +1,48 @@
 package demo;
 
-import com.vividsolutions.jts.geom.CoordinateSequence;
-import com.vividsolutions.jts.geom.GeometryFactory;
-import com.vividsolutions.jts.geom.LineString;
-import com.vividsolutions.jts.geom.Point;
-import com.vividsolutions.jts.geom.PrecisionModel;
-import com.vividsolutions.jts.geom.impl.CoordinateArraySequence;
+
 import com.vividsolutions.jts.operation.distance.DistanceOp;
+import com.vividsolutions.jts.geom.*;
+import com.vividsolutions.jts.operation.overlay.snap.GeometrySnapper;
 import demo.maputils.IconMarker;
 import demo.maputils.MapLine;
 import gtfs.Feed;
 import gtfs.FeedParser;
+import gtfs.entities.Calendar;
 import gtfs.entities.Route;
 import gtfs.entities.Shape;
 import gtfs.entities.Stop;
 import gtfs.entities.StopTime;
 import gtfs.entities.Trip;
 import java.awt.Color;
+import java.awt.Cursor;
 import java.awt.Image;
+import java.awt.event.MouseEvent;
 import java.io.File;
 import java.io.IOException;
+import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.util.Collection;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.TreeMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.prefs.Preferences;
 import javax.imageio.ImageIO;
-import javax.swing.JDialog;
 import javax.swing.JFileChooser;
-import javax.swing.JProgressBar;
 import javax.swing.SwingWorker;
-import net.sf.dynamicreports.jasper.builder.JasperReportBuilder;
-import static net.sf.dynamicreports.report.builder.DynamicReports.cht;
-import static net.sf.dynamicreports.report.builder.DynamicReports.cmp;
-import static net.sf.dynamicreports.report.builder.DynamicReports.col;
-import static net.sf.dynamicreports.report.builder.DynamicReports.report;
-import static net.sf.dynamicreports.report.builder.DynamicReports.stl;
-import static net.sf.dynamicreports.report.builder.DynamicReports.type;
-import net.sf.dynamicreports.report.builder.chart.AxisFormatBuilder;
-import net.sf.dynamicreports.report.builder.chart.XyAreaChartBuilder;
-import net.sf.dynamicreports.report.builder.chart.XyLineChartBuilder;
-import net.sf.dynamicreports.report.builder.column.TextColumnBuilder;
-import net.sf.dynamicreports.report.builder.style.StyleBuilder;
-import net.sf.dynamicreports.report.constant.HorizontalTextAlignment;
 import net.sf.dynamicreports.report.exception.DRException;
 
 import org.openstreetmap.gui.jmapviewer.Coordinate;
+import org.openstreetmap.gui.jmapviewer.DefaultMapController;
 import org.openstreetmap.gui.jmapviewer.JMapViewer;
+import org.openstreetmap.gui.jmapviewer.MapMarkerDot;
+import org.openstreetmap.gui.jmapviewer.interfaces.ICoordinate;
 
 /**
  *
@@ -59,7 +52,9 @@ public class MapController {
     Feed feed;
     Mappa m;
     JMapViewer map;
-    
+    /*Control*/
+    HashMap<Point,Statistic> stats;
+    DefaultMapController contPos;
     /**
      * controller starts
      */
@@ -67,6 +62,17 @@ public class MapController {
         map = new JMapViewer();
         m = new Mappa(map,this); 
         m.setVisible(true);
+        stats = new HashMap<>();
+        contPos = new DefaultMapController(map){
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                try {
+                   findSegment(e.getPoint(),m.getSelectedRoute());
+                } catch (DRException ex) {
+                    Logger.getLogger(Mappa.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+        };
         
     }
     
@@ -87,6 +93,7 @@ public class MapController {
             String dir = file.getAbsolutePath();
             try {
                 setGTFS(dir);
+               
             } catch (IOException ex) {
                 Logger.getLogger(MapController.class.getName()).log(Level.SEVERE, null, ex);
             }
@@ -96,22 +103,12 @@ public class MapController {
      /**
      * 
      * @param dir absolute path of GTFS directory.
+     * @throws java.io.IOException
      */
     public void setGTFS(String dir) throws IOException{
-        final JDialog dialog = new JDialog(m, "Wait"); 
-        dialog.setLocation(m.getWidth()/2, m.getHeight()/2- dialog.getHeight());
-        dialog.setUndecorated(false); 
-        
-        JProgressBar bar = new JProgressBar();
-        bar.setIndeterminate(true);
-        bar.setStringPainted(true);
-        bar.setString("Please wait...");
-        bar.setVisible(true);
-        dialog.add(bar);
-        
-        dialog.setSize(300,200);
-        dialog.setVisible(true);
-        
+        m.disableInput();
+        Cursor c = new Cursor(Cursor.WAIT_CURSOR);
+        m.setCursor(c);
         SwingWorker<Void,Void> sw = new SwingWorker<Void,Void>(){
             @Override
             protected Void doInBackground() throws Exception {
@@ -131,7 +128,8 @@ public class MapController {
             
             @Override
             protected void done(){
-                dialog.dispose();
+                m.enableInput();
+                m.setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
             }
         };
         sw.execute();
@@ -144,7 +142,6 @@ public class MapController {
     private void setRouteList(Collection<Route> routes){
         String[] arr = new String[routes.size()];
         int i=0;
-        arr[0] = "";
         for(Route r : routes)
             arr[i++] = r.getName();
         
@@ -158,6 +155,7 @@ public class MapController {
     public void showRoute(String name){
         HashSet<String> idShapes = new HashSet<>();
         Coordinate c=null;
+        HashSet<Statistic> lines = new HashSet<>();
         try {
             Image im = ImageIO.read(getClass().getClassLoader().getResourceAsStream("station.png"));
             Route r = feed.getRouteByName(name);
@@ -168,142 +166,202 @@ public class MapController {
                 List<Coordinate> shapel = new LinkedList<>();
                 for(Shape.Point p : s.getPoints()){
                     c = new Coordinate( p.getLat(),p.getLon());
-                    shapel.add(new Coordinate(p.getLat(),p.getLon()));                       
+                    MapMarkerDot mmd = new MapMarkerDot(c);
+                    map.addMapMarker(mmd);
+                    stats.put(p.getCoordinate(),new Statistic(p.getCoordinate(),mmd));
+                    shapel.add(c);                       
                 }
-                
-                map.addMapPolygon(new MapLine(shapel));
+                MapLine ml = new MapLine(shapel);
+                map.addMapPolygon(ml);
                 map.setDisplayPosition(c, 13);
                 for(StopTime stopT : t.getStopTimes()){
                     stops.add(stopT.getStop());
                 }
+                
             }
             for(Stop stop : stops){
                 map.addMapMarker(new IconMarker(new Coordinate(stop.getLat(),stop.getLon()), im));
             }
-             
         }
        
         catch(IOException ex){
                 System.err.println(ex.getMessage());
         }
     }
+
+
+    /*TODO: Togliere name, per ora è per un controllo*/ 
+    public void findSegment(java.awt.Point point,String name) throws DRException {
+        GeometryFactory g;
+        PrecisionModel precision = new PrecisionModel(PrecisionModel.FLOATING);
+        int srid = 4326; //WGS 84
+        g = new GeometryFactory(precision, srid);
+        ICoordinate c = map.getPosition(point);
+        Coordinate coord; 
+        Point pnt = g.createPoint(new com.vividsolutions.jts.geom.Coordinate(c.getLon(),c.getLat()));
+        m.disableInput();
+        m.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+        
+        SwingWorker<Void,Void> sw = new SwingWorker<Void,Void>(){
+            @Override
+            protected Void doInBackground() throws Exception {
+
+                HashSet<String> idShapes = new HashSet<>();
+                Route r = feed.getRouteByName(name);
+                com.vividsolutions.jts.geom.Coordinate[] coordinates;
+                MultiPoint path;
+                double dist,distMin;
+                distMin = Double.MAX_VALUE;
+                Point min = null;
+                Coordinate coord;
+                for(Trip t : r.getTrips()){
+                    Shape s = t.getShape();
+                    if(!idShapes.add(s.getId())) continue;
+                    coordinates = new com.vividsolutions.jts.geom.Coordinate[t.getStopTimes().size()];
+                    for(Shape.Point sp : s.getPoints()){
+                        Point p = sp.getCoordinate();
+                        dist = p.distance(pnt);
+                        if(dist < distMin){
+                            distMin = dist;
+                            min = p;
+                        }
+                    }
+                }
+                coord = new Coordinate(min.getY(),min.getX());
+                MapMarkerDot mmd = new MapMarkerDot(coord);
+                mmd.setColor(Color.MAGENTA);
+                map.addMapMarker(mmd);
+                //filterByTime(min);
+                Report report = new Report();
+                Statistic stat = stats.get(min);
+                report.showGraphic(stat);
+                //report.showGraphic(r,timeF,s.getPullman());*/
+                return null;
+            }
+            
+            @Override
+            protected void done(){
+                m.enableInput();
+                m.setCursor(Cursor.getDefaultCursor());
+            }
+                
+        };
+        sw.execute();
+        
+    }
     
-    public int[] calculateFrequency(Collection<Trip> trips, LineString line){
-       
+     private void filterByTime(Point p) throws DRException {
+
+        Comparator<String> comp = StopTime.TIME_COMPARATOR;
+        String timeFrom = m.getTime(0);
+        String timeTo = m.getTime(1);
+        int timeF = Integer.parseInt(timeFrom.substring(0, timeFrom.indexOf(":")));
+        int timeT = Integer.parseInt(timeTo.substring(0, timeTo.indexOf(":")));
+        Statistic s = stats.get(p);
+        s.setInterval(timeF, timeT);
+        int[] arr = s.getFreqs();
+        int k=0;
+        int[] r = new int[timeT-timeF+1];
+        for(int i = 0;i<arr.length;i++){
+                if(i>=timeF && i<timeT)
+                    r[k++] = arr[i];
+        }
+        
+     }
+    
+    /*Nome route per controlli, Per ora sono punti per verif correttezza*/
+    
+    public void statistic(String name){
+        m.disableInput();
+        m.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+        SwingWorker<Void,Void> sw = new SwingWorker<Void,Void>(){
+            @Override
+            protected Void doInBackground() throws Exception {
+                //if(stats == null) stats = new HashMap<>();
+                Collection<Trip> trips = feed.getRouteByName(name).getTrips();
+                HashSet<Shape> shapes = new HashSet<>();
+                for(Trip t : trips){
+                    if(!shapes.add(t.getShape())) continue;
+                        statisticSegment(t.getShape().getPoints(),trips);
+                    }
+              
+                return null;
+            }
+            
+            @Override
+            protected void done(){
+                m.enableInput();
+                m.setCursor(Cursor.getDefaultCursor());
+            }
+        };
+        sw.execute();
+    }
+    
+    
+    
+    public void statisticSegment(Collection<Shape.Point> segments,Collection<Trip> trips) throws DRException{
+        
+        for(Shape.Point ls : segments){
+            Point p = ls.getCoordinate();
+            Statistic s = calculateFrequency(trips,p);
+            filterByTime(p);
+            s.colorSegment();
+        }
+    }
+    
+    
+    
+    /* Per ora considero il punto e non un segmento per testare la correttezza.*/    
+    public Statistic calculateFrequency(Collection<Trip> trips, Point line){
         Point stop;
         StopTime correct;
         String timeArrival,time;
         TreeMap<Double,StopTime> distances = new TreeMap<>();
-        int[] freqs = new int[24];
-        
-        
-        for(Trip t : trips){
-            
-            for(StopTime s : t.getStopTimes()){
-                stop = s.getStop().getCoordinate();
-                DistanceOp d = new DistanceOp(line,stop);
-                System.out.println("distanza= "+d.distance());
-                distances.put(d.distance(),s);     
-                //map.addMapMarker(new MapMarkerDot(new Coordinate(stop.getY(),stop.getX())));
+        int[] freqs = new int[25];
+        LocalDate from = m.getDate(0);
+        LocalDate to = m.getDate(1);
+        Statistic stat;
+        LocalDate localDate = from.plusDays(0);
+        DayOfWeek day;
+        stat = stats.get(line);
+        do{
+            for(Trip t : trips){
+                stat.addPullman(t.getRoute().getName());
+                Calendar cal = t.getCalendar();
+                /*C'è per ora per fare controlli su NA*/
+                //if( (cal.getStartDate().isAfter(localDate) || (cal.getEndDate().isBefore(localDate)))) continue;
+                Map<DayOfWeek,Boolean> days = cal.getServiceDays();
+                Map<LocalDate,Boolean> exc = cal.getExceptions();
+                day = localDate.getDayOfWeek();
+                Boolean activeE,activeD;
+                /*Controllo se quel giorno è attivo*/
+                if( (activeE = exc.get(localDate) == null && ( (activeD=days.get(day))==null || activeD!=true)) || activeE == true ) 
+                    continue;
+                
+                for(StopTime s : t.getStopTimes()){
+                    stop = s.getStop().getCoordinate();
+                    DistanceOp d = new DistanceOp(line,stop);
+                    distances.put(d.distance(),s);     
+                    //map.addMapMarker(new MapMarkerDot(new Coordinate(stop.getY(),stop.getX())));
+                }
+                if(distances.isEmpty()) continue;
+                correct = distances.get(distances.firstKey());
+                timeArrival = correct.getArrival();
+                time = timeArrival.substring(0,timeArrival.indexOf(":"));
+                freqs[Integer.parseInt(time)%25]++;
+                distances.clear();
             }
-            correct = distances.get(distances.firstKey());
-            timeArrival = correct.getArrival();
-            time = timeArrival.substring(0,timeArrival.indexOf(":"));
-            freqs[Integer.parseInt(time)%24]++;
-            distances.clear();
-        }
-        return freqs;
-    }
-    
-    public void testDistance(String nameRoute){
-        com.vividsolutions.jts.geom.Coordinate[] cs = new com.vividsolutions.jts.geom.Coordinate[5];
-        for(int i = 40;i<45;i++){
-            cs[i-40] = new com.vividsolutions.jts.geom.Coordinate(i,5);
-        }
-        CoordinateSequence c = new CoordinateArraySequence(cs);
-        GeometryFactory gf = new GeometryFactory(new PrecisionModel(PrecisionModel.FLOATING),4326);
-        LineString l = new LineString(c, gf);
-        
-        Route r = feed.getRouteByName(nameRoute);
-        int arr[] = calculateFrequency(r.getTrips(),l);
-        
-        for(int i=0;i<arr.length;i++)
-            System.out.println("Array["+i+"]: "+arr[i] );
-            
-        try {
-            showGraphic(arr);
-        } catch (DRException ex) {
-            Logger.getLogger(MapController.class.getName()).log(Level.SEVERE, null, ex);
-        }
+            localDate = localDate.plusDays(1);
+        }while(!localDate.isAfter(to));
+        stat.setFreqs(freqs);
+        return stat;
     }
 
-    
-    void snap(String name) {
-       Route r = feed.getRouteByName(name);
-       HashSet<String> idShapes = new HashSet<>();
-       for( Trip t : r.getTrips()){
-           for(Shape s : t.getShape()){
-               if(!idShapes.add(s.getId())) continue;
-           }
-       }
-    }
-    
-    
-    /*Classe fascia*/
-    public static class Fascia{
-        private int hour;
-        private int freq;
-
-        public Fascia(int hour, int freq) {
-            this.hour = hour;
-            this.freq = freq;
-        }
-        
-        public int getHour() {
-            return hour;
-        }
-
-        public int getFreq() {
-            return freq;
-        }
-    }
-    
-    /*Deve esserci una collection di classe FASCIA.*/
-    private void showGraphic(int[] freqs) throws DRException {
-        Collection<Fascia> coll = new LinkedList<>();//create collection
-        for(int i=0;i<freqs.length;i++)
-            coll.add(new Fascia(i,freqs[i]));
-        /*Set styles*/
-        StyleBuilder boldStyle = stl.style().bold();
-        StyleBuilder columnStyle = stl.style().setHorizontalTextAlignment(HorizontalTextAlignment.CENTER);
-        StyleBuilder boldCenteredStyle = stl.style(boldStyle).setHorizontalTextAlignment(HorizontalTextAlignment.CENTER);
-        StyleBuilder columnTitleStyle  = stl.style(boldCenteredStyle)
-		                                    .setBorder(stl.pen1Point())
-		                                    .setBackgroundColor(Color.LIGHT_GRAY);
-        
-        TextColumnBuilder<Integer> hourColumn = col.column("Hour","hour",type.integerType());
-        TextColumnBuilder<Integer> freqColumn = col.column("Frequency","freq",type.integerType());
-        /*Create chart 3D*/
-        XyLineChartBuilder graphic = cht.xyLineChart()
-                                        .setTitle("Frequency chart")
-                                        .setXValue(hourColumn)
-                                        .setXAxisFormat(cht.axisFormat().setRangeMaxValueExpression(23).setLabel("Hours"))
-                                        .setYAxisFormat(cht.axisFormat().setLabel("Number of bus"))
-                                        .series(cht.xySerie(freqColumn));
-                                        
-        
-        JasperReportBuilder jrb = report()
-                .setColumnTitleStyle(columnTitleStyle)
-                .setColumnStyle(columnStyle)
-                .highlightDetailEvenRows()
-                .title(cmp.text("Report frequences"))
-                .columns( hourColumn,freqColumn)
-                .summary(graphic)
-                .setDataSource(coll)
-                .show(false);
-        
-    }
-    
+    void clearStatistic() {
+        if(stats!=null && !stats.isEmpty()) stats.clear(); 
+   }
+   
+   
     public static void main(String arg[]){
         try {
             for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
@@ -319,5 +377,66 @@ public class MapController {
         controller.start();
     }
 
+ 
+    
+    
+    
+    
+    
+    
+    
+        
    
+    //TODO-FINIRE.
+    public void snap(String name) {
+        GeometryFactory g = new GeometryFactory();
+        Route r = feed.getRouteByName(name);
+        HashSet<String> idShapes = new HashSet<>();
+        com.vividsolutions.jts.geom.Coordinate[] coordinates;
+        double tolerance;
+        GeometrySnapper gs;
+        MultiPoint path;
+        for( Trip t : r.getTrips()){
+            Shape s = t.getShape();
+            if(!idShapes.add(s.getId())) continue;
+            coordinates = new com.vividsolutions.jts.geom.Coordinate[s.getPoints().size()];
+            int i = 0;
+            for(Shape.Point p: s.getPoints()){
+                Point jp = p.getCoordinate();
+                coordinates[i++]=jp.getCoordinate();
+            }
+            path = g.createMultiPoint(coordinates);
+            for(StopTime st : t.getStopTimes()){
+                Point p = st.getStop().getCoordinate();
+                tolerance = DistanceOp.distance(path, p);
+                gs = new GeometrySnapper(path); 
+                path = (MultiPoint)gs.snapTo(p,tolerance+0.000000001 );
+            } 
+            showSnappedRoute(path);
+            break;
+       }
+    }
+    /**
+     * draw lines on the map
+     * @param path multipoint of all the path
+     */
+    public void showSnappedRoute(MultiPoint path){
+        map.removeAllMapPolygons();
+        HashSet<String> idShapes = new HashSet<>();
+        try {
+            Image im = ImageIO.read(getClass().getClassLoader().getResourceAsStream("station.png"));
+            List<Coordinate> shapel = new LinkedList<>();
+            for( com.vividsolutions.jts.geom.Coordinate c : path.getCoordinates()){
+                shapel.add(new Coordinate( c.y,c.x));
+            }        
+            map.addMapPolygon(new MapLine(shapel));
+            for(Coordinate c : shapel){
+                map.addMapMarker(new MapMarkerDot(c));
+
+            }
+        }
+        catch(IOException ex){
+                System.err.println(ex.getMessage());
+        }
+    }
 }
