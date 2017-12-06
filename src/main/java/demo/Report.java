@@ -72,6 +72,7 @@ public class Report {
                 .highlightDetailEvenRows()
                 .title(cmp.text("Report frequences"))
                 .columns(hourColumn,freqColumn)
+                .summary(graphic)
                 .setDataSource(coll);
        
         return jrb;

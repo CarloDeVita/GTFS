@@ -58,9 +58,12 @@ public class MapController {
     /**
      * controller starts
      */
-    private void start() {
+    private void start() throws IOException {
         map = new JMapViewer();
-        m = new Mappa(map,this); 
+        m = new Mappa(map,this);
+        Image im = ImageIO.read(getClass().getClassLoader().getResourceAsStream("bus.png"));
+        m.setIconImage(im);
+
         m.setVisible(true);
         stats = new HashMap<>();
         contPos = new DefaultMapController(map){
@@ -283,8 +286,8 @@ public class MapController {
                 for(Trip t : trips){
                     if(!shapes.add(t.getShape())) continue;
                         statisticSegment(t.getShape().getPoints(),trips);
-                    }
-              
+                }
+                System.out.println("Dimensione struttura: "+stats.size());
                 return null;
             }
             
@@ -374,7 +377,11 @@ public class MapController {
             java.util.logging.Logger.getLogger(Mappa.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         }
         MapController controller = new MapController();
-        controller.start();
+        try {
+            controller.start();
+        } catch (IOException ex) {
+            Logger.getLogger(MapController.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
 
  

@@ -2,7 +2,6 @@ package demo.hibernate;
 
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.GeometryFactory;
-import demo.TripDAO;
 import gtfs.FeedParser;
 import gtfs.entities.Trip;
 import java.io.File;
@@ -47,7 +46,7 @@ public class DemoHibernate {
                     throw new FileNotFoundException();
                 long end = System.currentTimeMillis();
                 System.out.println("Ottenuto feed in tempo : "+ ((end-start)/1000.)+" secondi");
-                hibernateUtil.saveOrUpdateCollection(feed.getAgencies());
+                /*hibernateUtil.saveOrUpdateCollection(feed.getAgencies());
                 System.out.println("|------------ Saved agencies-----------|");
                 hibernateUtil.saveOrUpdateCollection(feed.getRoutes());
                 System.out.println("|------------ Saved routes-----------|");
@@ -62,27 +61,13 @@ public class DemoHibernate {
                 System.out.println("|------------ Saved stop times-----------|");
                 if(feed.getFrequencies()!=null)
                 hibernateUtil.saveOrUpdateCollection(feed.getFrequencies());
-                System.out.println("|------------ Saved frequencies-----------|");
+                System.out.println("|------------ Saved frequencies-----------|");*/
                 hibernateUtil.saveOrUpdateCollection(feed.getCalendars());
                 System.out.println("|------------ Saved calendars-----------|");
             }
             GeometryFactory factory;
                 factory = new GeometryFactory(new PrecisionModel(PrecisionModel.FLOATING), 4326);
 
-                TripDAO tripDAO = new TripDAO();
-                Coordinate coord[] = new Coordinate[1];
-                coord[0] = new Coordinate(14.19431, 40.82409);
-                Point point = factory.createPoint(coord[0]);
-                MultiPoint points = factory.createMultiPoint(coord);
-                List<Trip> trips;
-                trips = tripDAO.getTripsForPoints(point, 20);
-                
-                HashSet<Route> routes = new HashSet<>();
-                for(Trip t : trips)
-                    routes.add(t.getRoute());
-                
-                for(Route r : routes)
-                    System.out.println(r.getName());
         }catch(FileNotFoundException e){
             System.err.println("ERRORE : "+e.getMessage());
             throw e;
