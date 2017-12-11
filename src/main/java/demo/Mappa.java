@@ -8,6 +8,7 @@ import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.geom.PrecisionModel;
 import com.vividsolutions.jts.geom.impl.CoordinateArraySequence;
 import java.awt.Component;
+import java.awt.Toolkit;
 import java.awt.event.ItemEvent;
 import java.awt.event.MouseEvent;
 import java.time.Instant;
@@ -208,6 +209,9 @@ public class Mappa extends javax.swing.JFrame {
 
         dateToLabel.setText("To:");
 
+        for(int i=1;i<25;i++){
+            times[i-1] = i+":00";
+        }
         timeTo.setModel(new javax.swing.DefaultComboBoxModel<>(times));
 
         jLabel1.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N

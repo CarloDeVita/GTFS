@@ -69,7 +69,7 @@ public class CalendarFileParser extends GTFSParser<Calendar>{
         Map<DayOfWeek,Boolean> days = new EnumMap<>(DayOfWeek.class); 
         for(int i = 1; i <= 7; i++){
             try{
-                int activeValue = Integer.parseInt(parameters[i+1]);
+                int activeValue = Integer.parseInt(parameters[i]);
                 if(activeValue < 0 && activeValue > 1)
                     throw new GTFSParsingException("Invalid value \""+parameters[i+1]+"\" for "+DayOfWeek.of(i));
                 DayOfWeek day = DayOfWeek.of(i);

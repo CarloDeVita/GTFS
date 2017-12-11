@@ -47,10 +47,8 @@ public class Statistic {
     }
     
     public void setInterval(int start,int end){
-        System.out.println("S: "+start+" E: "+end);
         this.start = start;
         this.end = end;
-        System.out.println("S: "+start+" E: "+end);
     }
 
     public int getStart() {
@@ -78,10 +76,8 @@ public class Statistic {
     
     public void colorSegment(){
         int sum = 0;
-        for(int i=start;i<end;i++){
+        for(int i=start;i<end;i++)
             sum +=freqs[i];
-            System.out.println("freq["+i+"="+freqs[i]);
-        }
         if(sum>10) mmd.setColor(Color.blue);
         else if(sum>5 )mmd.setColor(Color.red);
         else mmd.setColor(Color.black);
