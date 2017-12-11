@@ -79,6 +79,31 @@ public class HibernateUtil {
         tx.commit();
         session.close();
     }
+    
+    public void save(Object object){
+        try(Session session = openSession()){
+            Transaction tx = session.beginTransaction();
+            session.save(object);
+            tx.commit();
+        }
+    }
+    
+    public void saveCollection(Collection<?> objects){
+        try(Session session = openSession()){
+            int count = 0;
+            Transaction tx = session.beginTransaction();
+            for(Object o : objects){
+                if(count==1000){
+                    count = 0;
+                    tx.commit();
+                    tx = session.beginTransaction();
+                }
+                session.saveOrUpdate(o);
+                count++;
+            }
+            tx.commit();
+        }
+    }
 
     public Session openSession() {
         return sessionFactory.openSession();

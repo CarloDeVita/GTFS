@@ -95,7 +95,7 @@ public class OSMImporter {
         command.add(directory+"\\"+exec); //executable
         command.add("-S");command.add(directory+"\\default.style"); //style file
         command.add("-l"); //WGS84 lat-lon projection
-        //command.add("-s"); // slim mode
+        command.add("-s"); // slim mode
         command.add("-r");command.add("xml"); //specify file format
         command.add("-U");command.add(username); //Set database user
         command.add("-W"); //Get password from input

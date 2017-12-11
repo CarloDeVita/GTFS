@@ -226,6 +226,7 @@ public class Feed {
      * @return a read-only view of the frequencies of the feed.
      */
     public Collection<Frequency> getFrequencies(){
+        if(frequencies==null) return null;
         return Collections.unmodifiableCollection(frequencies);
     }
 }
