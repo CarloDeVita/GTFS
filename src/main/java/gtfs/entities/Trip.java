@@ -6,7 +6,6 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.SortedSet;
 import java.util.TreeSet;
-import org.hibernate.annotations.CascadeType;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
@@ -14,7 +13,6 @@ import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
 import javax.persistence.Transient;
-import org.hibernate.annotations.Cascade;
 import org.hibernate.annotations.SortComparator;
 
 /**
@@ -211,21 +209,18 @@ public class Trip extends GTFS{
        
     @ManyToOne(optional=true)
     @JoinColumn(name="shape", nullable=true)
-    @Cascade(CascadeType.SAVE_UPDATE)
     public Shape getShape(){
         return shape;
     }
     
     @ManyToOne(optional=false)
     @JoinColumn(name="route", nullable=false)
-    @Cascade(value={CascadeType.SAVE_UPDATE})
     public Route getRoute(){
         return route;
     }
 
     @ManyToOne(optional=false)
     @JoinColumn(name="calendar", nullable=false)
-    @Cascade(value={CascadeType.SAVE_UPDATE})
     public Calendar getCalendar() {
         return calendar;
     }
@@ -236,7 +231,6 @@ public class Trip extends GTFS{
      */
     @OneToMany(targetEntity=Frequency.class, mappedBy="trip")
     @SortComparator(Frequency.StartComparator.class)
-    @Cascade(value={CascadeType.DELETE})
     public SortedSet<Frequency> getFrequencies(){
         if(frequencies==null)
             setFrequencies(new TreeSet<>(new Frequency.StartComparator()));
@@ -248,8 +242,7 @@ public class Trip extends GTFS{
      * @return a read-only view of the stop times of the trip.
      */
     /*@OneToMany(targetEntity=StopTime.class, mappedBy="trip")
-    @SortComparator(StopTime.ArrivalComparator.class)
-    @Cascade(value={CascadeType.DELETE})*/
+    @SortComparator(StopTime.ArrivalComparator.class)*/
     @Transient
     public SortedSet<StopTime> getStopTimes(){
         if(stopTimes==null)

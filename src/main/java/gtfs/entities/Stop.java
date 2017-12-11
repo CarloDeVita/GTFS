@@ -11,8 +11,6 @@ import javax.persistence.JoinColumn;
 import javax.persistence.OneToOne;
 import javax.persistence.Table;
 import javax.persistence.Transient;
-import org.hibernate.annotations.Cascade;
-import org.hibernate.annotations.CascadeType;
 
 /**
  * A stop or station.
@@ -134,7 +132,6 @@ public class Stop extends GTFS{
 
     @OneToOne(targetEntity=Stop.class)
     @JoinColumn(name="parent_id", nullable=true)
-    @Cascade(value={CascadeType.SAVE_UPDATE})
     public Stop getParent() {
         return parent;
     }

@@ -1,14 +1,12 @@
 package gtfs.entities;
 
 import java.util.Comparator;
-import org.hibernate.annotations.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Table;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
-import org.hibernate.annotations.Cascade;
 
 /**
  * The time a vehicle arrives and departs from a stop.
@@ -191,7 +189,6 @@ public class StopTime extends GTFS implements java.io.Serializable{
     @Id
     @ManyToOne(optional=false)
     @JoinColumn(name="trip", nullable=false)
-    @Cascade(value={CascadeType.SAVE_UPDATE})
     public Trip getTrip() {
         return trip;
     }
@@ -203,7 +200,6 @@ public class StopTime extends GTFS implements java.io.Serializable{
     
     @ManyToOne(optional=false)
     @JoinColumn(name="stop", nullable=false)
-    @Cascade(value={CascadeType.SAVE_UPDATE})
     public Stop getStop() {
         return stop;
     }

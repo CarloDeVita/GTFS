@@ -9,11 +9,8 @@ import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
-import javax.persistence.OneToMany;
 import javax.persistence.Table;
 import javax.persistence.Transient;
-import org.hibernate.annotations.Cascade;
-import org.hibernate.annotations.CascadeType;
 
 /**
  * A group of Trips displayed to user as a single service.
@@ -263,7 +260,6 @@ public class Route extends GTFS{
     
     @ManyToOne(optional=false)
     @JoinColumn(name="agency", nullable=false)
-    @Cascade(value={CascadeType.SAVE_UPDATE})
     public Agency getAgency(){
         return agency;
     }
@@ -286,8 +282,6 @@ public class Route extends GTFS{
      * 
      * @return the read-only view of all the trips belonging to the route.
      */
-    /*@OneToMany(targetEntity=Trip.class, mappedBy="route")
-    @Cascade(value={CascadeType.DELETE})*/
     @Transient
     public Set<Trip> getTrips() {
         if(trips==null)

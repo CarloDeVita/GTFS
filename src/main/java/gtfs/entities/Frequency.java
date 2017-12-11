@@ -1,14 +1,12 @@
 package gtfs.entities;
 
 import java.util.Comparator;
-import org.hibernate.annotations.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
-import org.hibernate.annotations.Cascade;
 
 /**
  * The frequency of a departure time schedule for a trip.
@@ -127,7 +125,6 @@ public class Frequency extends GTFS implements java.io.Serializable{
     @Id
     @ManyToOne(optional=false)
     @JoinColumn(name="trip", nullable=false)
-    @Cascade(value={CascadeType.SAVE_UPDATE})
     public Trip getTrip() {
         return trip;
     }
