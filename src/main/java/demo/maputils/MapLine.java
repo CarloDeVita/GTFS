@@ -33,7 +33,7 @@ public class MapLine extends MapPolygonImpl {
     public void paint(Graphics g, List<Point> points) {
         if (g2d==null){ 
             g2d = (Graphics2D) g.create();
-            g2d.setColor(Color.RED);
+            g2d.setColor(Color.BLUE);
         }
         g2d.setStroke(getStroke());
         path2d = buildPath(points);

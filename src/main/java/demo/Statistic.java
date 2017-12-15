@@ -18,6 +18,15 @@ public class Statistic {
     private int[] freqs;
     private int start; //inizio tempo
     private int end;
+    private int daysOfPeriod;
+
+    public int getDaysOfPeriod() {
+        return daysOfPeriod;
+    }
+
+    public void setDaysOfPeriod(int daysOfPeriod) {
+        this.daysOfPeriod = daysOfPeriod;
+    }
     private MapMarkerDot mmd;//Per ora sono punti, poi saranno linee
 
     public Statistic(Point p){
@@ -50,6 +59,8 @@ public class Statistic {
         this.start = start;
         this.end = end;
     }
+    
+    
 
     public int getStart() {
         return start;
@@ -76,12 +87,15 @@ public class Statistic {
     
     public void colorSegment(){
         int sum = 0;
+        double f;
         for(int i=start;i<end;i++)
             sum +=freqs[i];
-        if(sum>10) mmd.setColor(Color.blue);
-        else if(sum>5 )mmd.setColor(Color.red);
+        
+        //Calcolo per ora 
+        f = sum/((end-start)*daysOfPeriod);
+        if(f>1) mmd.setColor(Color.blue);
+        else if(f>0 )mmd.setColor(Color.red);
         else mmd.setColor(Color.black);
-       
     }
                 
     
@@ -96,5 +110,20 @@ public class Statistic {
         Statistic s = (Statistic)o;
         return p.equals(s.p);
     }
+
+    public int[] getFreqsPeriod() {
+        int t = end - start ;
+        int[] res = new int[t];
+        int k=0;
+        
+        for(int i=start;i<end;i++){
+            res[k++] = freqs[i]/(daysOfPeriod);
+        
+        }
+        return res;
+
+    }
+
+    
     
 }

@@ -6,10 +6,12 @@
 package demo;
 
 import java.awt.Color;
+import java.io.IOException;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Set;
+import javax.imageio.ImageIO;
 import net.sf.dynamicreports.jasper.builder.JasperReportBuilder;
 import static net.sf.dynamicreports.report.builder.DynamicReports.cht;
 import static net.sf.dynamicreports.report.builder.DynamicReports.cmp;
@@ -21,7 +23,9 @@ import net.sf.dynamicreports.report.builder.chart.XyLineChartBuilder;
 import net.sf.dynamicreports.report.builder.column.TextColumnBuilder;
 import net.sf.dynamicreports.report.builder.component.SubreportBuilder;
 import net.sf.dynamicreports.report.builder.style.StyleBuilder;
+import net.sf.dynamicreports.report.constant.FontName;
 import net.sf.dynamicreports.report.constant.HorizontalTextAlignment;
+import net.sf.dynamicreports.report.constant.VerticalTextAlignment;
 import net.sf.dynamicreports.report.exception.DRException;
 
 /**
@@ -30,23 +34,28 @@ import net.sf.dynamicreports.report.exception.DRException;
  */
 public class Report {
 
-    public void showGraphic(Statistic stat) throws DRException {
-        
+    public void showGraphic(Statistic stat) throws DRException, IOException {
+        StyleBuilder titleStyle = stl.style().bold().setFontName(FontName.ARIAL).setFontSize(32);
         SubreportBuilder freqTab = cmp.subreport(freqsTab(stat));
         SubreportBuilder namesP = cmp.subreport(pullmanTab(stat));
         JasperReportBuilder jrb = report()
+                .title(cmp.image(ImageIO.read(getClass().getClassLoader().getResourceAsStream("busRep.png"))).setFixedDimension(200,90),
+                        cmp.text("Bus frequencies report").setStyle(titleStyle.setHorizontalTextAlignment(HorizontalTextAlignment.CENTER).setVerticalTextAlignment(VerticalTextAlignment.TOP)))
                 .summary(freqTab,namesP)
                 .show(false);
     }
 
     private JasperReportBuilder freqsTab(Statistic stat) {
             /*Set styles*/
+         
         Collection<Fascia> coll = new LinkedList<>();//create collection
-        int[] freqs = stat.getFreqs();
+        //int[] freqs = stat.getFreqs();
+        int[] freqsPeriod = stat.getFreqsPeriod();
         int start = stat.getStart();
         int end = stat.getEnd();
+        int k=0;
         for(int i=start;i<end;i++)
-            coll.add(new Fascia(i,freqs[i]));
+            coll.add(new Fascia(i,freqsPeriod[k++]));
         
         /*Set styles*/
         StyleBuilder boldStyle = stl.style().bold();
@@ -55,22 +64,19 @@ public class Report {
         StyleBuilder columnTitleStyle  = stl.style(boldCenteredStyle)
 		                                    .setBorder(stl.pen1Point())
 		                                    .setBackgroundColor(Color.LIGHT_GRAY);
-        
         TextColumnBuilder<Integer> hourColumn = col.column("Hour","hour",type.integerType());
         TextColumnBuilder<Integer> freqColumn = col.column("Frequency","freq",type.integerType());
         /*Create chart 3D*/
         XyLineChartBuilder graphic = cht.xyLineChart()
-                                        .setTitle("Frequency chart")
                                         .setXValue(hourColumn)
                                         .setXAxisFormat(cht.axisFormat().setRangeMinValueExpression(start).setRangeMaxValueExpression(end).setLabel("Hours"))
-                                        .setYAxisFormat(cht.axisFormat().setLabel("Number of bus"))
+                                        .setYAxisFormat(cht.axisFormat().setLabel("Number of buses"))
                                         .series(cht.xySerie(freqColumn));
-                       
         JasperReportBuilder jrb = report()
                 .setColumnTitleStyle(columnTitleStyle)
                 .setColumnStyle(columnStyle)
                 .highlightDetailEvenRows()
-                .title(cmp.text("Report frequences"))
+                //.title(cmp.text("Report frequences"))
                 .columns(hourColumn,freqColumn)
                 .summary(graphic)
                 .setDataSource(coll);
@@ -79,13 +85,17 @@ public class Report {
     }
 
     private JasperReportBuilder pullmanTab(Statistic stat) {
-        TextColumnBuilder<String> namesP = col.column("Pullman","name",type.stringType());
+        StyleBuilder boldStyle = stl.style().bold();
+        StyleBuilder boldCenteredStyle = boldStyle.setHorizontalTextAlignment(HorizontalTextAlignment.CENTER);
+        TextColumnBuilder<String> namesP = col.column("Buses","name",type.stringType());
+        
         //TextColumnBuilder<Integer> freqColumn = col.column("Frequency","freq",type.integerType());
         Set<StatPullman> pullmanStat = new HashSet<>();
         for(String s : stat.getPullman()){
             pullmanStat.add(new StatPullman(s));
         }
         JasperReportBuilder jrb = report()
+                .title(cmp.text("Transient buses").setStyle(boldCenteredStyle.setFontSize(22)))
                 .columns(namesP)
                 .setDataSource(pullmanStat);
         
@@ -129,7 +139,7 @@ public class Report {
     }
     
     /*Deve esserci una collection di classe FASCIA.*/
-    public void showGraphic(int[] freqs, int start, Set<String> pullman) throws DRException {
+   /* public void showGraphic(int[] freqs, int start, Set<String> pullman) throws DRException {
         SubreportBuilder freqTab = cmp.subreport(freqsTab(freqs, start));
         SubreportBuilder namesP = cmp.subreport(pullmanTab(pullman));
         JasperReportBuilder jrb = report()
@@ -151,13 +161,13 @@ public class Report {
     }
     
     public JasperReportBuilder freqsTab(int[] freqs, int start) throws DRException{
-             /*Set styles*/
+             //Set styles
          Collection<Fascia> coll = new LinkedList<>();//create collection
         int len = freqs.length - start;
         for(int i=0;i<freqs.length;i++)
             coll.add(new Fascia(i+start,freqs[i]));
         
-        /*Set styles*/
+        //Set styles
         StyleBuilder boldStyle = stl.style().bold();
         StyleBuilder columnStyle = stl.style().setHorizontalTextAlignment(HorizontalTextAlignment.CENTER);
         StyleBuilder boldCenteredStyle = stl.style(boldStyle).setHorizontalTextAlignment(HorizontalTextAlignment.CENTER);
@@ -167,7 +177,7 @@ public class Report {
         
         TextColumnBuilder<Integer> hourColumn = col.column("Hour","hour",type.integerType());
         TextColumnBuilder<Integer> freqColumn = col.column("Frequency","freq",type.integerType());
-        /*Create chart 3D*/
+        //Create chart 3D
         XyLineChartBuilder graphic = cht.xyLineChart()
                                         .setTitle("Frequency chart")
                                         .setXValue(hourColumn)
@@ -184,5 +194,5 @@ public class Report {
                 .setDataSource(coll);
        
         return jrb;
-    }
+    }*/
 }

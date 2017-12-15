@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.IOException;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.Period;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -73,6 +74,7 @@ public class MapController {
                    findSegment(e.getPoint(),m.getSelectedRoute());
                 } catch (DRException ex) {
                     Logger.getLogger(Mappa.class.getName()).log(Level.SEVERE, null, ex);
+                    
                 }
             }
         };
@@ -110,7 +112,7 @@ public class MapController {
      */
     public void setGTFS(String dir) throws IOException{
         m.disableInput();
-        Cursor c = new Cursor(Cursor.WAIT_CURSOR);
+        Cursor c = Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR);
         m.setCursor(c);
         SwingWorker<Void,Void> sw = new SwingWorker<Void,Void>(){
             @Override
@@ -132,7 +134,7 @@ public class MapController {
             @Override
             protected void done(){
                 m.enableInput();
-                m.setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
+                m.setCursor(Cursor.getDefaultCursor());
             }
         };
         sw.execute();
@@ -200,7 +202,6 @@ public class MapController {
         int srid = 4326; //WGS 84
         g = new GeometryFactory(precision, srid);
         ICoordinate c = map.getPosition(point);
-        Coordinate coord; 
         Point pnt = g.createPoint(new com.vividsolutions.jts.geom.Coordinate(c.getLon(),c.getLat()));
         m.disableInput();
         m.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
@@ -230,10 +231,6 @@ public class MapController {
                         }
                     }
                 }
-                coord = new Coordinate(min.getY(),min.getX());
-                MapMarkerDot mmd = new MapMarkerDot(coord);
-                mmd.setColor(Color.MAGENTA);
-                map.addMapMarker(mmd);
                 //filterByTime(min);
                 Report report = new Report();
                 Statistic stat = stats.get(min);
@@ -323,10 +320,13 @@ public class MapController {
         int[] freqs = new int[25];
         LocalDate from = m.getDate(0);
         LocalDate to = m.getDate(1);
+        Period p = from.until(to);
+        int daysOfPeriod = p.getDays() + 1;
         Statistic stat;
         LocalDate localDate = from.plusDays(0);
         DayOfWeek day;
         stat = stats.get(line);
+        stat.setDaysOfPeriod(daysOfPeriod);
         do{
             for(Trip t : trips){
                 stat.addPullman(t.getRoute().getName());
