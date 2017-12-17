@@ -1,9 +1,11 @@
 CREATE OR REPLACE FUNCTION CreateSegmentsTable() RETURNS VOID AS $$
 BEGIN
-	CREATE TABLE IF NOT EXISTS SEGMENTS
+    CREATE TABLE IF NOT EXISTS SEGMENTS
     (
-        id SERIAL,
-        segment geometry PRIMARY KEY,
+        id SERIAL PRIMARY KEY,
+        source INTEGER,
+        target INTEGER,
+        segment geometry,
         name text,
         highway text,
         meters float,
