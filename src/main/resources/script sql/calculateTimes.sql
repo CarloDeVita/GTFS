@@ -46,7 +46,7 @@ BEGIN
                     FROM MATCHEDSEGMENTS M JOIN SEGMENTS S ON M.SEGMENT = S.ID 
                     WHERE M.SHAPE_ID = trip_rec.shape AND M.SEQUENCENUMBER>shp_sequence AND ST_DWITHIN(S.SEGMENT, stp_rec.coordinate,0.0001)
                     ORDER BY M.SEQUENCENUMBER ASC LIMIT 1;
-                    
+
                     SELECT SUM(METERS)/(stp_rec.arrival-last_time) INTO avg_vel
                     FROM MATCHEDSEGMENTS M JOIN SEGMENTS S ON M.segment = S.id
                     WHERE M.shape_id = trip_rec.shape AND M.sequencenumber>=shp_sequence AND M.sequencenumber<shp_target;
@@ -71,10 +71,9 @@ BEGIN
                     shp_sequence := shp_target;
                 END IF;
             END LOOP;
-            return;
         END LOOP;
     END LOOP;
-
+EXCEPTION WHEN query_canceled THEN    
 END;
 $$ LANGUAGE plpgsql;
 

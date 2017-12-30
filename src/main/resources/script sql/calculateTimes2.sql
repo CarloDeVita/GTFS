@@ -1,85 +1,73 @@
-CREATE OR REPLACE FUNCTION CalculateTimes() RETURNS VOID AS $$
+CREATE OR REPLACE FUNCTION CalculateTimes2() RETURNS VOID AS $$
 DECLARE
-    trip_cursor CURSOR FOR (SELECT * FROM GTFS.TRIPS );
-    route_cursor CURSOR FOR(SELECT COALESCE(shortname,longname) AS NAME, ID FROM GTFS.ROUTES WHERE TYPE=3);
-    stp_cursor CURSOR FOR  (SELECT ST.TRIP, ST.ARRIVAL, ST.SEQUENCENUMBER,S.COORDINATE
-                            FROM GTFS.STOP_TIMES ST JOIN GTFS.STOP S ON ST.STOP = S.ID
-                            ORDER BY ST.TRIP ASC, ST.SEQUENCENUMBER ASC );
-
-    curs CURSOR FOR (SELECT COALESCE(R.shortname,R.longname) AS NAME,
-                            T.id, T.shape, T.calendar,
-                            gtfsTimeToSeconds(ST.ARRIVAL) AS arrival, S.coordinate
-                    FROM ((GTFS.ROUTES R JOIN GTFS.TRIPS T on T.route=R.id) JOIN GTFS.STOP_TIMES ST ON ST.trip=T.id) JOIN GTFS_STOPS S ON ST.stop=S.id
+    curs CURSOR FOR (SELECT COALESCE(R.shortname,R.longname) AS name,
+                            T.id AS trip, T.shape AS shape, T.calendar AS calendar,
+                            gtfsTimeToSeconds(ST.ARRIVAL) AS arrival, S.coordinate AS coordinate
+                    FROM ((GTFS.ROUTES R JOIN GTFS.TRIPS T on T.route=R.id) JOIN GTFS.STOP_TIMES ST ON ST.trip=T.id) JOIN GTFS.STOPS S ON ST.stop=S.id
                     WHERE R.type=3 AND T.shape IS NOT NULL
-                    ORDER BY T.id ASC, ST.sequenceNumber ASC);
-    stp_rec RECORD;
-    trip_rec RECORD;
+                    ORDER BY ST.trip ASC, ST.sequenceNumber ASC);
     trip_id TEXT;
     shp_sequence INTEGER;
     shp_target INTEGER;
     last_time INTEGER;
     seg_id INTEGER;
-    len float;
     avg_vel float;
     path_rec RECORD;
     dist_traveled float;
 
+    i INTEGER;
+
 BEGIN 
-    
-    FOR route_rec IN route_cursor
+    i:=0;
+    FOR cur_rec IN curs 
     LOOP
-        FOR trip_rec IN (SELECT * FROM GTFS.TRIPS T WHERE T.ROUTE = route_rec.id AND T.shape IS NOT NULL)
-        LOOP
+        IF(trip_id IS NULL OR trip_id <> cur_rec.trip) THEN
+            trip_id := cur_rec.trip;
             shp_sequence := 0;
-            FOR stp_rec IN (SELECT gtfsTimeToSeconds(ST.ARRIVAL) AS arrival,S.COORDINATE 
-                            FROM GTFS.STOP_TIMES ST JOIN GTFS.STOPS S ON ST.STOP = S.ID
-                            WHERE ST.trip = trip_rec.id
-                            ORDER BY ST.sequenceNumber ASC)
+            --Match first time with first segment
+            SELECT M.segment INTO seg_id
+            FROM MATCHEDSEGMENTS M
+            WHERE M.SHAPE_ID = cur_rec.shape AND M.SEQUENCENUMBER = 1;
+
+            INSERT INTO PASSAGES(SEGMENT,CALENDAR,BUS,TIMEPASS) 
+            VALUES(seg_id, cur_rec.calendar, cur_rec.name, cur_rec.arrival);
+            i:=i+1;
+
+
+            last_time := cur_rec.arrival;
+            shp_sequence := 1;
+        ELSE
+            SELECT M.SEQUENCENUMBER INTO shp_target 
+            FROM MATCHEDSEGMENTS M JOIN SEGMENTS S ON M.SEGMENT = S.ID 
+            WHERE M.SHAPE_ID = cur_rec.shape AND M.SEQUENCENUMBER>shp_sequence AND ST_DWITHIN(S.SEGMENT, cur_rec.coordinate,0.0001)
+            ORDER BY M.SEQUENCENUMBER ASC LIMIT 1;
+
+            SELECT SUM(METERS)/(cur_rec.arrival-last_time) INTO avg_vel
+            FROM MATCHEDSEGMENTS M JOIN SEGMENTS S ON M.segment = S.id
+            WHERE M.shape_id = cur_rec.shape AND M.sequencenumber>=shp_sequence AND M.sequencenumber<shp_target;
+
+            dist_traveled := 0;
+            FOR path_rec IN(SELECT S.meters,S.id  
+                            FROM MATCHEDSEGMENTS M JOIN SEGMENTS S ON M.segment = S.id
+                            WHERE M.shape_id = cur_rec.shape AND M.sequencenumber>=shp_sequence AND M.sequencenumber<=shp_target
+                            ORDER BY M.sequenceNumber ASC)
             LOOP
-                IF(shp_sequence = 0) THEN
-                    SELECT M.segment INTO seg_id
-                    FROM MATCHEDSEGMENTS M
-                    WHERE M.SHAPE_ID = trip_rec.shape AND M.SEQUENCENUMBER = 1;
-
-                    INSERT INTO PASSAGES(SEGMENT,CALENDAR,BUS,TIMEPASS) 
-                    VALUES(seg_id, trip_rec.calendar, route_rec.name, stp_rec.arrival);
-                        
-                    last_time := stp_rec.arrival;
-                    shp_sequence := 1;
+                IF(dist_traveled = 0) THEN
+                    dist_traveled := path_rec.meters;
                 ELSE 
-                    SELECT S.ID, M.SEQUENCENUMBER INTO seg_id, shp_target 
-                    FROM MATCHEDSEGMENTS M JOIN SEGMENTS S ON M.SEGMENT = S.ID 
-                    WHERE M.SHAPE_ID = trip_rec.shape AND M.SEQUENCENUMBER>shp_sequence AND ST_DWITHIN(S.SEGMENT, stp_rec.coordinate,0.0001)
-                    ORDER BY M.SEQUENCENUMBER ASC LIMIT 1;
-                    
-                    SELECT SUM(METERS)/(stp_rec.arrival-last_time) INTO avg_vel
-                    FROM MATCHEDSEGMENTS M JOIN SEGMENTS S ON M.segment = S.id
-                    WHERE M.shape_id = trip_rec.shape AND M.sequencenumber>=shp_sequence AND M.sequencenumber<shp_target;
-                    
-                    dist_traveled := 0;
-                    FOR path_rec IN(SELECT S.meters,S.id  
-                                    FROM MATCHEDSEGMENTS M JOIN SEGMENTS S ON M.segment = S.id
-                                    WHERE M.shape_id = trip_rec.shape AND M.sequencenumber>=shp_sequence AND M.sequencenumber<=shp_target
-                                    ORDER BY M.sequenceNumber ASC)
-                    LOOP
-                        IF(dist_traveled = 0) THEN
-                            dist_traveled := path_rec.meters;
-                        ELSE 
+                    INSERT INTO PASSAGES(SEGMENT,CALENDAR,BUS,TIMEPASS) 
+                    VALUES(path_rec.id, cur_rec.calendar, cur_rec.name, last_time + dist_traveled*avg_vel);
 
-                            INSERT INTO PASSAGES(SEGMENT,CALENDAR,BUS,TIMEPASS) 
-                            VALUES(path_rec.id, trip_rec.calendar, route_rec.name, last_time + dist_traveled*avg_vel);
-                      
-                            dist_traveled := dist_traveled + path_rec.meters;
-                        END IF;
-                    END LOOP;
-                    last_time := stp_rec.arrival;
-                    shp_sequence := shp_target;
+                    dist_traveled := dist_traveled + path_rec.meters;
                 END IF;
             END LOOP;
-            return;
-        END LOOP;
+            last_time := cur_rec.arrival;
+            shp_sequence := shp_target;
+        
+        END IF;
+        
     END LOOP;
-
+EXCEPTION WHEN query_canceled THEN raise notice 'ITERAZIONI: %',i;    
 END;
 $$ LANGUAGE plpgsql;
 
