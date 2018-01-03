@@ -14,8 +14,8 @@ declare
     i INTEGER;
     m FLOAT;
     --
-    p INTEGER;--REFCURSOR;--pgr_costResult;
-    patharray pgr_costResult[];
+    p INTEGER;
+
     lastsource INTEGER;
     lasttarget INTEGER;
     currsource INTEGER;
@@ -65,12 +65,12 @@ begin
         END IF;
 
         IF(last_seg IS NULL OR last_seg<>seg_id) THEN
-            IF(last_seg IS NOT NULL /*AND m<150*/) THEN
+            IF(last_seg IS NOT NULL ) THEN
                 seg := ST_MakeLine(lastCoordinate, ST_StartPoint(seg));
-                /*patharray := pgr_astar('SELECT id,source,target,meters, ST_X(ST_StartPoint(segment)), ST_Y(ST_StartPoint(segment)), ST_X(ST_EndPoint(segment)), ST_Y(ST_EndPoint(segment)) FROM public.segments
-                                        WHERE ST_DWithin(.....,segment)<0.0009',lasttarget ,currsource,false,false);*/
+ 
                 FOR p IN (SELECT edge FROM pgr_dijkstra('SELECT id ,source,target,meters AS cost,CASE WHEN oneway=''true'' THEN -1 ELSE meters END AS reverse_cost, ST_X(ST_StartPoint(segment)) AS x1, ST_Y(ST_StartPoint(segment)) AS y1, ST_X(ST_EndPoint(segment)) AS x2, ST_Y(ST_EndPoint(segment)) AS y2 FROM public.segments
-                                        WHERE ST_DWithin(ST_GeomFromText('''|| ST_AsText(seg) ||''',4326),segment,0.0002) AND source IS NOT NULL AND target IS NOT NULL',lasttarget ,currsource,true))
+                                        WHERE ST_DWithin(ST_GeomFromText('''|| ST_AsText(seg) ||''',4326),segment,0.0002) AND source IS NOT NULL AND target IS NOT NULL',lasttarget ,currsource,true)
+                          ORDER BY path_seq ASC)
                 LOOP
                     IF(p<>last_seg AND p<>seg_id AND p<>-1) THEN
                         INSERT INTO matchedsegments(segment, shape_id, sequencenumber) values(p,sh_rec.shape_id,i);
@@ -78,10 +78,10 @@ begin
                     END IF;
                 END LOOP;
             END IF;
-            --IF(last_seg IS NULL OR m<150) THEN
-                INSERT into matchedsegments(segment, shape_id, sequencenumber) values(seg_id,sh_rec.shape_id,i);
-                i := i+1;
-          --  END IF;
+          
+            INSERT into matchedsegments(segment, shape_id, sequencenumber) values(seg_id,sh_rec.shape_id,i);
+            i := i+1;
+            
             last_seg := seg_id;
         END IF;
         lastCoordinate:=sh_rec.coordinate;
@@ -89,5 +89,4 @@ begin
         lasttarget:=currtarget;
 
     end loop;
-
 end; $BODY$;
