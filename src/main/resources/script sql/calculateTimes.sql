@@ -8,7 +8,7 @@ DECLARE
                     ORDER BY ST.trip ASC, ST.sequenceNumber ASC);
     freq_curs CURSOR FOR (SELECT COALESCE(R.shortname, R.longname) AS name,
                           T.id AS trip, T.shape AS shape, T.calendar AS calendar,
-                          F.starttime, F.endtime, F.headwayseconds
+                          F.id AS frequency
                           FROM (GTFS.ROUTES R JOIN GTFS.TRIPS T ON T.route=R.id) JOIN GTFS.FREQUENCIES F ON f.trip=t.ID
                           WHERE R.type=3 AND T.shape IS NOT NULL
                           ORDER BY trip ASC);
@@ -53,8 +53,8 @@ BEGIN
                     WHERE M.SHAPE_ID = cur_rec.shape AND M.SEQUENCENUMBER = 1;
 
                     --//TODO add frequency info
-                    INSERT INTO PASSAGES(SEGMENT,CALENDAR,BUS,TIMEPASS) 
-                    VALUES(seg_id, freq_rec.calendar, cur_rec.name, freq_rec.arrival);
+                    INSERT INTO PASSAGES(SEGMENT,CALENDAR,BUS,TIMEPASS, FREQUENCY) 
+                    VALUES(seg_id, freq_rec.calendar, cur_rec.name, freq_rec.arrival, freq_rec.frequency);
 
                     INSERT INTO TRIP_PATH_TIMES(segment, secs)
                     VALUES(seg_id,0);
@@ -83,8 +83,8 @@ BEGIN
                         ELSE 
                             secs := secs + (dist_traveled/avg_vel);
 
-                            INSERT INTO PASSAGES(SEGMENT,CALENDAR,BUS,TIMEPASS) 
-                            VALUES(path_rec.id, freq_rec.calendar, freq_rec.name, freq_rec.starttime + secs);
+                            INSERT INTO PASSAGES(SEGMENT,CALENDAR,BUS,TIMEPASS, FREQUENCY) 
+                            VALUES(path_rec.id, freq_rec.calendar, freq_rec.name, freq_rec.starttime + secs, freq_rec.frequency);
 
                             INSERT INTO TRIP_PATH_TIMES(segment, secs)
                             VALUES(path_red.id,secs);
@@ -97,8 +97,8 @@ BEGIN
                 END IF;
             END LOOP;
         ELSE
-            INSERT INTO PASSAGES(SEGMENT,CALENDAR,BUS,TIMEPASS)
-            SELECT TPS.segment, freq_rec.calendar, freq_rec.name, freq_rec.starttime+TPS.secs
+            INSERT INTO PASSAGES(SEGMENT,CALENDAR,BUS,TIMEPASS, FREQUENCY)
+            SELECT TPS.segment, freq_rec.calendar, freq_rec.name, freq_rec.starttime+TPS.secs,freq_rec.frequency
             FROM TRIP_PATH_TIMES TPS;
         END IF;
     END LOOP;

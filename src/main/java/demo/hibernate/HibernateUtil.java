@@ -66,7 +66,7 @@ public class HibernateUtil {
         int count = 0;
         Transaction tx = session.beginTransaction();
         for(Object o : c){
-            if(count==1000){
+            if(count==100){
                 count = 0;
                 tx.commit();
                 session.close();

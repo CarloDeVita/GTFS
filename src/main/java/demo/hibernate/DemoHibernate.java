@@ -27,7 +27,7 @@ public class DemoHibernate {
     public static void main(String[] args) throws IOException {
         HibernateUtil hibernateUtil = null;
         try{
-            HibernateUtil.setDefaultCatalog("postgis_test");
+            HibernateUtil.setDefaultCatalog("postgisTest");
             hibernateUtil = HibernateUtil.getInstance();
             //if(true) return;
             Preferences pref = Preferences.userNodeForPackage(DemoHibernate.class);

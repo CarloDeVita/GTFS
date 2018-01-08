@@ -3,6 +3,7 @@ package gtfs.entities;
 import java.util.Comparator;
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
@@ -18,6 +19,7 @@ import javax.persistence.Table;
 public class Frequency extends GTFS implements java.io.Serializable{
     public static Comparator<Frequency> START_COMPARATOR = new StartComparator();
     public static Comparator<Frequency> END_COMPARATOR = new EndComparator();
+    private int id;
     private Trip trip; // required
     /**
      * The time when the frequency starts to be considered.
@@ -120,6 +122,16 @@ public class Frequency extends GTFS implements java.io.Serializable{
 
     public void setTrip(Trip trip) {
         this.trip = trip;
+    }
+    
+    public void setId(int id){
+        this.id = id;
+    }
+    
+    @Id
+    @GeneratedValue
+    public int getId(){
+        return this.id;
     }
     
     @Id
