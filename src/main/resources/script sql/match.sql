@@ -16,31 +16,31 @@ declare
     --
     p INTEGER;
 
-    lastsource INTEGER;
     lasttarget INTEGER;
     currsource INTEGER;
     currtarget INTEGER;
     seg geometry;
 begin
-    lastShape=null;
-    last_seg=null;
-    lastCoordinate:= NULL;
-    for sh_rec in sh_cur loop
-        IF(lastShape IS NULL OR lastShape<>sh_rec.shape_id) THEN 
-            lastShape:= sh_rec.shape_id;
-            i := 1;
-            last_seg:= null;
-            lastCoordinate:=null;
-            lastsource=null;
-            lasttarget=null;
-            currsource=null;
-            currtarget=null;
 
+    lastShape := NULL;
+    last_seg := NULL;
+    lastCoordinate := NULL;
+    FOR sh_rec IN sh_cur LOOP
+        IF(lastShape IS NULL OR lastShape<>sh_rec.shape_id) THEN 
+            lastShape := sh_rec.shape_id;
+            i := 1;
+            last_seg := null;
+            lastCoordinate := null;
+            lasttarget := null;
+            currtarget := null;
+            
             select s.id,S.source, S.target INTO seg_id,currsource,currtarget
             FROM segments S
-            WHERE ST_DWithin(sh_rec.coordinate, S.segment, 0.0001)
+            WHERE ST_DWithin(sh_rec.coordinate, S.segment, 0.00025)
             ORDER BY St_Distance(sh_rec.coordinate, S.segment)
             LIMIT 1;
+
+            IF(seg_id IS NULL) THEN lastShape := NULL; CONTINUE; END IF;
         --ELIF(lastCoordinate IS NOT NULL AND ST_DWithin(lastCoordinate, sh_rec.coordinate, 0.0001) THEN
           --  CONTINUE;
         ELSE
@@ -49,7 +49,7 @@ begin
 
             select S2.id, S2.source, S2.target, S2.segment, S2.meters INTO seg_id, currsource, currtarget, seg, m
             FROM (Select * FROM segments S
-                  WHERE ST_DWithin(sh_rec.coordinate, S.segment, 0.0001) --AND S.meters<200
+                  WHERE ST_DWithin(sh_rec.coordinate, S.segment, 0.00025)
                   ORDER BY St_Distance(sh_rec.coordinate, S.segment) ASC
                   LIMIT 5) S2
             ORDER BY CAST(((CASE WHEN S2.oneway IS NOT NULL AND S2.oneway='true' THEN MinimumAngle(angle, ST_StartPoint(S2.segment), ST_EndPoint(S2.segment))
@@ -62,14 +62,19 @@ begin
                                           ) END)*/
                       ASC
             LIMIT 1;
+
+            IF(seg_id IS NULL) THEN CONTINUE; END IF;
         END IF;
 
         IF(last_seg IS NULL OR last_seg<>seg_id) THEN
             IF(last_seg IS NOT NULL ) THEN
                 seg := ST_MakeLine(lastCoordinate, ST_StartPoint(seg));
  
-                FOR p IN (SELECT edge FROM pgr_dijkstra('SELECT id ,source,target,meters AS cost,CASE WHEN oneway=''true'' THEN -1 ELSE meters END AS reverse_cost, ST_X(ST_StartPoint(segment)) AS x1, ST_Y(ST_StartPoint(segment)) AS y1, ST_X(ST_EndPoint(segment)) AS x2, ST_Y(ST_EndPoint(segment)) AS y2 FROM public.segments
-                                        WHERE ST_DWithin(ST_GeomFromText('''|| ST_AsText(seg) ||''',4326),segment,0.0002) AND source IS NOT NULL AND target IS NOT NULL',lasttarget ,currsource,true)
+                FOR p IN (SELECT edge 
+                          FROM pgr_dijkstra('SELECT id ,source,target,meters AS cost,CASE WHEN oneway=''true'' THEN -1 ELSE meters END AS reverse_cost, 
+                                                    ST_X(ST_StartPoint(segment)) AS x1, ST_Y(ST_StartPoint(segment)) AS y1, ST_X(ST_EndPoint(segment)) AS x2, ST_Y(ST_EndPoint(segment)) AS y2 FROM public.segments
+                                             WHERE ST_DWithin(ST_GeomFromText('''|| ST_AsText(seg) ||''',4326),segment,0.0008) AND source IS NOT NULL AND target IS NOT NULL'
+                                            , lasttarget, currsource, true)
                           ORDER BY path_seq ASC)
                 LOOP
                     IF(p<>last_seg AND p<>seg_id AND p<>-1) THEN
@@ -84,8 +89,8 @@ begin
             
             last_seg := seg_id;
         END IF;
+
         lastCoordinate:=sh_rec.coordinate;
-        lastsource:=currsource;
         lasttarget:=currtarget;
 
     end loop;

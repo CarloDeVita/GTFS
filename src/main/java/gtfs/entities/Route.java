@@ -5,12 +5,17 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import javax.persistence.Column;
+import javax.persistence.ConstraintMode;
 import javax.persistence.Entity;
+import javax.persistence.ForeignKey;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
 import javax.persistence.Table;
 import javax.persistence.Transient;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 /**
  * A group of Trips displayed to user as a single service.
@@ -259,7 +264,7 @@ public class Route extends GTFS{
     }
     
     @ManyToOne(optional=false)
-    @JoinColumn(name="agency", nullable=false)
+    @JoinColumn(name="agency", nullable=false,foreignKey = @ForeignKey(name="route_agency_fk"))
     public Agency getAgency(){
         return agency;
     }
@@ -282,7 +287,8 @@ public class Route extends GTFS{
      * 
      * @return the read-only view of all the trips belonging to the route.
      */
-    @Transient
+    @OneToMany(mappedBy="route")
+    @OnDelete(action=OnDeleteAction.CASCADE)
     public Set<Trip> getTrips() {
         if(trips==null)
             setTrips(new HashSet<>());

@@ -3,11 +3,14 @@ package gtfs.entities;
 import java.util.Comparator;
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.ForeignKey;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 /**
  * The frequency of a departure time schedule for a trip.
@@ -134,14 +137,12 @@ public class Frequency extends GTFS implements java.io.Serializable{
         return this.id;
     }
     
-    @Id
     @ManyToOne(optional=false)
-    @JoinColumn(name="trip", nullable=false)
+    @JoinColumn(name="trip", nullable=false, foreignKey=@ForeignKey(name="frequencies_trips_fk"))
     public Trip getTrip() {
         return trip;
     }
-
-    @Id
+    
     public String getStartTime() {
         return startTime;
     }

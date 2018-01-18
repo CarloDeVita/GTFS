@@ -5,11 +5,16 @@ import java.net.URL;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
+import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
 import javax.persistence.Table;
 import javax.persistence.Transient;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 /**
  * An operator of a public transit network, often a public authority.
@@ -119,7 +124,6 @@ public class Agency extends GTFS implements Serializable{
     }
     
     @Id
-    @Column(name="name")
     public String getName(){
         return name;
     }
@@ -188,7 +192,8 @@ public class Agency extends GTFS implements Serializable{
      * 
      * @return a read-only view of the routes associated with the agency.
      */
-    @Transient
+    @OneToMany(/*cascade=CascadeType.REMOVE,*/ mappedBy="agency")
+    @OnDelete(action=OnDeleteAction.CASCADE)
     public Set<Route> getRoutes() {
         return Collections.unmodifiableSet(routes);
     }

@@ -5,7 +5,9 @@ BEGIN
         id SERIAL PRIMARY KEY,
         segment INTEGER,
         shape_id TEXT,
-        sequencenumber INTEGER
+        sequencenumber INTEGER,
+
+        CONSTRAINT matched_seg_fk FOREIGN KEY(segment) REFERENCES segments(id)
     );
 END;
 $$ LANGUAGE plpgsql;

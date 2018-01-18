@@ -8,6 +8,7 @@ import demo.maputils.IconMarker;
 import demo.maputils.MapLine;
 import gtfs.Feed;
 import gtfs.FeedParser;
+import gtfs.dao.FeedDAO;
 import gtfs.entities.Route;
 import gtfs.entities.Shape;
 import gtfs.entities.Stop;
@@ -21,6 +22,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import javax.imageio.ImageIO;
@@ -29,6 +31,7 @@ import javax.swing.JFrame;
 import org.openstreetmap.gui.jmapviewer.Coordinate;
 import org.openstreetmap.gui.jmapviewer.JMapViewer;
 import org.openstreetmap.gui.jmapviewer.MapMarkerDot;
+import org.openstreetmap.gui.jmapviewer.MapPolygonImpl;
 import org.openstreetmap.gui.jmapviewer.interfaces.ICoordinate;
 import org.postgis.Geometry;
 import org.postgis.PGgeometry;
@@ -47,41 +50,14 @@ public class Controller {
             FeedParser parser = new FeedParser();
             final Feed feed = parser.read(ch.getSelectedFile().getAbsolutePath());
             
-            /*Thread th = new Thread(){
+            Thread th = new Thread(){
                 @Override
                 public void run(){
-                    HibernateUtil.setDefaultCatalog("postgisTest");
-                    HibernateUtil hibernateUtil = HibernateUtil.getInstance();
-                    hibernateUtil.saveCollection(feed.getAgencies());
-                    System.out.println("|------------ Saved agencies-----------|");
-                    hibernateUtil.saveCollection(feed.getRoutes());
-                    System.out.println("|------------ Saved routes-----------|");
-                    hibernateUtil.saveCollection(feed.getCalendars());
-                    System.out.println("|------------ Saved calendars-----------|");
-                    if(feed.getShapes()!=null)
-                        hibernateUtil.saveCollection(feed.getShapes());
-                    System.out.println("|------------ Saved shapes-----------|");
-                    hibernateUtil.saveCollection(feed.getTrips());
-                    System.out.println("|------------ Saved trips-----------|");
-                    LinkedList<Stop> noParent = new LinkedList<>();
-                    LinkedList<Stop> withParent = new LinkedList<>();
-                    for(Stop s : feed.getStops()){
-                        if(s.getParent()==null)
-                            noParent.add(s);
-                        else
-                            withParent.add(s);
-                    }
-                    hibernateUtil.saveCollection(noParent);
-                    hibernateUtil.saveCollection(withParent);
-                    System.out.println("|------------ Saved stops-----------|");
-                    hibernateUtil.saveCollection(feed.getStopTimes());
-                    System.out.println("|------------ Saved stop times-----------|");
-                    if(feed.getFrequencies()!=null)
-                        hibernateUtil.saveCollection(feed.getFrequencies());
-                    System.out.println("|------------ Saved frequencies-----------|");
+                   FeedDAO feedDAO = new FeedDAO();
+                   feedDAO.save(feed);
                 }
             };
-            th.start();*/
+            th.start();
             
             JFrame frame = new JFrame();
             frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -103,17 +79,17 @@ public class Controller {
             // import the map into the database
             OSMImporter importer = new OSMImporter();
             importer.setUsername("postgres").setPassword("postgres").setDatabase("postgisTest")
-                .setDirectory("C:\\Users\\cdevi\\Desktop\\osm2pgsql-bin").setExecutableName("osm2pgsql.exe");
+                .setDirectory(System.getProperty("user.home")+"\\Desktop\\osm2pgsql-bin").setExecutableName("osm2pgsql.exe");
             boolean success = importer.importData(System.getProperty("java.io.tmpdir")+"map.osm");
             
             if(success) System.out.println("Data successfully imported");
             else{ System.out.println("Data could not be imported"); return;}
-            //showSegments();*/
-            Shape firstShape = null;
+            //showSegments();
+            /*Shape firstShape = null;
             Route r=null;
             for(Trip t : feed.getTrips()){
                 
-                if(t.getRoute().getShortName().equals("R6") && t.getShape()!=null){
+                if(t.getRoute().getShortName().equals("180") && t.getShape()!=null){
                     if(r==null) r=t.getRoute();
                     
                     firstShape = t.getShape();
@@ -132,7 +108,15 @@ public class Controller {
                 
             }
             
-            //stampa shape
+            //stampa envelope
+            List<Coordinate> envPolygon = new LinkedList<>();
+            envPolygon.add(new Coordinate(envelope.getMaxY(), envelope.getMinX()));
+            envPolygon.add(new Coordinate(envelope.getMaxY(), envelope.getMaxX()));
+            envPolygon.add(new Coordinate(envelope.getMinY(), envelope.getMaxX()));
+            envPolygon.add(new Coordinate(envelope.getMinY(), envelope.getMinX()));
+            
+            map.addMapPolygon(new MapPolygonImpl(envPolygon));*/
+            
             
             //stampa matched
             try { 
@@ -153,14 +137,21 @@ public class Controller {
           /* 
           * Create a statement and execute a select query. 
           */
-            /*Statement st = conn.createStatement();
+            long time;
+            Statement st = conn.createStatement();
+            time = System.currentTimeMillis();
             st.execute("Select PopulateSegments()");
-            
-//            th.join();
+            time = System.currentTimeMillis() - time;
+            System.out.println("NOTICE : Segments table populated in "+time/1000.+" seconds");
+            th.join();
+           
             st = conn.createStatement();
-            st.execute("select matchseg()");*/
+            time = System.currentTimeMillis();
+            st.execute("select matchseg()");
+            time = System.currentTimeMillis() - time;
+            System.out.println("NOTICE : Shapes matched with the street map in "+time/1000.+" seconds");
             
-            String query =" select S.segment from matchedsegments M join segments S on M.segment=S.id where shape_id = ?";
+            /*String query =" select S.segment from matchedsegments M join segments S on M.segment=S.id where shape_id = ?";
             PreparedStatement s = conn.prepareStatement(query);
             s.setString(1, firstShape.getId());
             ResultSet rs = s.executeQuery();
@@ -179,9 +170,19 @@ public class Controller {
                 map.addMapPolygon(mline);
             }
             
-        
             
-            
+            /*String query = "select ST_X(sp.coordinate) as lon,ST_Y(sp.coordinate) as lat, r.shortname, r.longname from gtfs.shape_points sp join gtfs.trips t on t.shape=sp.shape_id join gtfs.routes r on t.shape=r.id where not exists (Select id from segments s where ST_Dwithin(s.segment,sp.coordinate,0.0003)) and r.type=3 and r.shortname not in ('L1','F1','F2')";
+            PreparedStatement pst = conn.prepareStatement(query);
+            ResultSet rs = pst.executeQuery();
+            HashSet<String> names = new HashSet<>();
+            while(rs.next()){
+                ICoordinate c = new Coordinate(rs.getDouble("lat"), rs.getDouble("lon"));
+                map.addMapMarker(new MapMarkerDot((Coordinate) c));
+                names.add(rs.getString("shortname")+"|"+rs.getString("longname"));
+            }
+            for(String s : names)
+                System.out.println(s);
+            */
             }catch( Exception e ) { 
                 e.printStackTrace(); 
             }

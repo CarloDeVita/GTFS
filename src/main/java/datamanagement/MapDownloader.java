@@ -24,7 +24,16 @@ public class MapDownloader {
      * @param fileName the name of the output file. If omitted it is replaced with "map".
      */
     public void download(Envelope env, String dir, String fileName) throws IOException{
-        String urlString = String.format(Locale.US,"http://overpass-api.de/api/map/interpreter?data=[bbox];(way[highway];node(w));out;&bbox=%.4f,%.4f,%.4f,%.4f",env.getMinX(), env.getMinY(), env.getMaxX(),env.getMaxY());
+        double minX=env.getMinX()-0.0001;
+        double minY=env.getMinY()-0.0001;
+        double maxX=env.getMaxX()+0.0001;
+        double maxY=env.getMaxY()+0.0001;
+        if(minX<-180) minX = -180;
+        if(minY<-90) minY = -90;
+        if(maxX>180) maxX = 180;
+        if(maxY>90) maxY = 90;
+       
+        String urlString = String.format(Locale.US,"http://overpass-api.de/api/map/interpreter?data=[bbox];(way[highway];node(w));out;&bbox=%.4f,%.4f,%.4f,%.4f",minX, minY, maxX,maxY);
         URL url = new URL(urlString);
 
         if(dir==null) dir = System.getProperty("java.io.tmpdir");

@@ -3,10 +3,13 @@ package gtfs.entities;
 import java.util.Comparator;
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.ForeignKey;
 import javax.persistence.Table;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 /**
  * The time a vehicle arrives and departs from a stop.
@@ -188,7 +191,7 @@ public class StopTime extends GTFS implements java.io.Serializable{
 
     @Id
     @ManyToOne(optional=false)
-    @JoinColumn(name="trip", nullable=false)
+    @JoinColumn(name="trip", nullable=false, foreignKey=@ForeignKey(name="stop_times_trips_fk"))
     public Trip getTrip() {
         return trip;
     }
@@ -199,7 +202,8 @@ public class StopTime extends GTFS implements java.io.Serializable{
     }
     
     @ManyToOne(optional=false)
-    @JoinColumn(name="stop", nullable=false)
+    @JoinColumn(name="stop", nullable=false, foreignKey=@ForeignKey(name="stop_times_stop_fk"))
+    @OnDelete(action=OnDeleteAction.CASCADE)
     public Stop getStop() {
         return stop;
     }
@@ -289,7 +293,6 @@ public class StopTime extends GTFS implements java.io.Serializable{
     /**
      * Sets the sequence number of the stop for the trip.
      * 
-     * @param sequence
      * @return true if the sequence number is set correctly, false if it is a negative number.
      */
     public boolean setSequenceNumber(int sequenceNumber) {

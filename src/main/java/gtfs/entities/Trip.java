@@ -7,12 +7,15 @@ import java.util.NoSuchElementException;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import javax.persistence.Entity;
+import javax.persistence.ForeignKey;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
 import javax.persistence.Transient;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 import org.hibernate.annotations.SortComparator;
 
 /**
@@ -208,19 +211,21 @@ public class Trip extends GTFS{
     }
        
     @ManyToOne(optional=true)
-    @JoinColumn(name="shape", nullable=true)
+    @JoinColumn(name="shape", nullable=true, foreignKey=@ForeignKey(name="trip_shape_fk"))
+    @OnDelete(action=OnDeleteAction.CASCADE)
     public Shape getShape(){
         return shape;
     }
     
     @ManyToOne(optional=false)
-    @JoinColumn(name="route", nullable=false)
+    @JoinColumn(name="route", nullable=false, foreignKey=@ForeignKey(name="trip_route_fk" ))
     public Route getRoute(){
         return route;
     }
 
     @ManyToOne(optional=false)
-    @JoinColumn(name="calendar", nullable=false)
+    @JoinColumn(name="calendar", nullable=false, foreignKey=@ForeignKey(name="trip_calendar_fk"))
+    @OnDelete(action=OnDeleteAction.CASCADE)
     public Calendar getCalendar() {
         return calendar;
     }
@@ -231,6 +236,7 @@ public class Trip extends GTFS{
      */
     @OneToMany(targetEntity=Frequency.class, mappedBy="trip")
     @SortComparator(Frequency.StartComparator.class)
+    @OnDelete(action=OnDeleteAction.CASCADE)
     public SortedSet<Frequency> getFrequencies(){
         if(frequencies==null)
             setFrequencies(new TreeSet<>(new Frequency.StartComparator()));
@@ -241,9 +247,9 @@ public class Trip extends GTFS{
      * 
      * @return a read-only view of the stop times of the trip.
      */
-    /*@OneToMany(targetEntity=StopTime.class, mappedBy="trip")
-    @SortComparator(StopTime.ArrivalComparator.class)*/
-    @Transient
+    @OneToMany(targetEntity=StopTime.class, mappedBy="trip")
+    @SortComparator(StopTime.ArrivalComparator.class)
+    @OnDelete(action=OnDeleteAction.CASCADE)
     public SortedSet<StopTime> getStopTimes(){
         if(stopTimes==null)
             setStopTimes(new TreeSet<>(StopTime.SEQUENCE_COMPARATOR));

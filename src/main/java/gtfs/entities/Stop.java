@@ -5,12 +5,17 @@ import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.PrecisionModel;
 import java.net.URL;
+import javax.persistence.CascadeType;
 import javax.persistence.Entity;
+import javax.persistence.ForeignKey;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
 import javax.persistence.OneToOne;
 import javax.persistence.Table;
 import javax.persistence.Transient;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 /**
  * A stop or station.
@@ -130,8 +135,9 @@ public class Stop extends GTFS{
         return Boolean.TRUE;
     }
 
-    @OneToOne(targetEntity=Stop.class)
-    @JoinColumn(name="parent_id", nullable=true)
+    @ManyToOne(targetEntity=Stop.class)
+    @JoinColumn(name="parent_id", nullable=true,foreignKey=@ForeignKey(name="stops_stops_fk"))
+    @OnDelete(action=OnDeleteAction.CASCADE)
     public Stop getParent() {
         return parent;
     }
