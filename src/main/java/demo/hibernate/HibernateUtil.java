@@ -110,6 +110,13 @@ public class HibernateUtil {
         return sessionFactory.openSession();
     }
     
+    public void deleteAllFrom(String entity){
+        Session session = sessionFactory.openSession();
+        Transaction tx = session.beginTransaction();
+        session.createQuery("Delete "+entity).executeUpdate();
+        tx.commit();
+    }
+    
     public void close(){
         if(sessionFactory!=null)
             sessionFactory.close();
