@@ -11,10 +11,17 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class FeedDAO {
-    public void save(final Feed feed){
+    public boolean save(final Feed feed){
         final HibernateUtil hibernateUtil = HibernateUtil.getInstance();
         Thread threads[] = new Thread[4];
         long time = System.currentTimeMillis();
+        
+        hibernateUtil.deleteAllFrom("Agency");
+        hibernateUtil.deleteAllFrom("Calendar");
+        hibernateUtil.deleteAllFrom("Stop");
+        hibernateUtil.deleteAllFrom("Shape");
+        
+        
         threads[0] = new Thread(){
                         @Override
                         public void run(){
@@ -69,7 +76,7 @@ public class FeedDAO {
             for(Thread t : threads)
                 if(t!=null) t.join();
         }catch(InterruptedException ex){
-            return;
+            return false;
         }
         
         hibernateUtil.saveCollection(feed.getTrips());
@@ -90,7 +97,7 @@ public class FeedDAO {
             try {
                 threads[0].join();
             } catch (InterruptedException ex) {
-                return;
+                return false;
             }
         }
         else{
@@ -100,7 +107,7 @@ public class FeedDAO {
         time = System.currentTimeMillis()-time;
         
         System.out.println("Feed saved in "+time/1000. +" seconds");
-        
+        return true;
         /*hibernateUtil.saveCollection(feed.getAgencies());
         System.out.println("|------------ Saved agencies -----------|");
         hibernateUtil.saveCollection(feed.getRoutes());

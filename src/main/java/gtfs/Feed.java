@@ -19,6 +19,30 @@ public class Feed {
     private Collection<Calendar> calendars;
     private Collection<Frequency> frequencies;
     
+    /*public void holdRoutes(int routeType){
+        HashSet<Route> routesToDelete = new HashSet<>();
+        for(Route r : getRoutes()){
+            if(r.getType()==routeType) continue;
+            routesToDelete.add(r);
+            for(Trip t : r.getTrips()){
+                trips.remove(t);
+                Shape s = t.getShape();
+                if(s!=null) shapes.remove(s);
+                for(StopTime stp : t.getStopTimes())
+                    stp
+        }
+        
+        for(Route r : routesToDelete){
+            routes.remove(r);
+            for(Trip t : r.getTrips()){
+                trips.remove(t);
+                Shape s = t.getShape();
+                if(s!=null) shapes.remove(s);
+                for
+        }
+            
+    }*/
+    
     public void setAgencies(Collection<Agency> agencies) {
         this.agencies = agencies;
     }

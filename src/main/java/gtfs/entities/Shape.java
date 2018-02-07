@@ -11,11 +11,15 @@ import javax.persistence.CollectionTable;
 import javax.persistence.ElementCollection;
 import javax.persistence.Embeddable;
 import javax.persistence.Entity;
+import javax.persistence.ForeignKey;
 import javax.persistence.Id;
+import javax.persistence.JoinColumn;
 import javax.persistence.Table;
 import javax.persistence.Transient;
 import org.hibernate.annotations.Cascade;
 import org.hibernate.annotations.CascadeType;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 import org.hibernate.annotations.SortComparator;
 
 /**
@@ -58,7 +62,8 @@ public class Shape extends GTFS {
     @ElementCollection(targetClass=Point.class)
     @CollectionTable(name="shape_points", schema="gtfs")
     @SortComparator(Point.SequenceComparator.class)
-    @Cascade(value=CascadeType.ALL)
+    @JoinColumn(foreignKey = @ForeignKey(name = "shape_points_fk"))
+    @OnDelete(action=OnDeleteAction.CASCADE)
     public SortedSet<Point> getPoints(){
         return Collections.unmodifiableSortedSet(points);
     }

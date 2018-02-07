@@ -10,10 +10,14 @@ import java.util.Map;
 import javax.persistence.CollectionTable;
 import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
+import javax.persistence.ForeignKey;
 import javax.persistence.Id;
+import javax.persistence.JoinColumn;
 import javax.persistence.MapKeyJoinColumn;
 import javax.persistence.Table;
 import javax.persistence.Transient;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 /**
  * A service availability schedule.
@@ -174,7 +178,9 @@ public class Calendar extends GTFS{
      */
     @ElementCollection
     @CollectionTable(name="calendar_exceptions", schema="gtfs", catalog="postgis_test")
-    @MapKeyJoinColumn(name="calendar")
+    @MapKeyJoinColumn(name="calendar", foreignKey = @ForeignKey(name="calendar_exceptions_fk"))
+    @JoinColumn
+    @OnDelete(action=OnDeleteAction.CASCADE)
     public Map<LocalDate, Boolean> getExceptions(){
         if(exceptions==null)
             setExceptions(new HashMap<>());
