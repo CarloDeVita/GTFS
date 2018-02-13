@@ -1,5 +1,7 @@
+DROP FUNCTION IF EXISTS populatesegments();
+
 CREATE OR REPLACE FUNCTION public.populatesegments()
-RETURNS void LANGUAGE 'plpgsql' AS $BODY$
+RETURNS TEXT LANGUAGE 'plpgsql' AS $BODY$
 DECLARE
     line_cursor CURSOR FOR SELECT osm_id, way, junction, oneway, name, highway
                            FROM planet_osm_line 
@@ -14,8 +16,8 @@ DECLARE
     meters float;
     oneway boolean;
 BEGIN
-	--SELECT CreateSegmentsTable();
-	
+    TRUNCATE TABLE segments CASCADE ;
+    
     FOR line_record IN line_cursor LOOP
     	way := line_record.way;
 
@@ -38,8 +40,8 @@ BEGIN
 
                 SELECT ST_Length(geography(segment), true) INTO meters;
                 --aggiungi segmento
-                INSERT INTO SEGMENTS(segment,name,oneway,highway, meters)
-                VALUES(segment, line_record.name, oneway, line_record.highway, meters);
+                INSERT INTO SEGMENTS(segment,name,oneway,highway, meters, osm_id)
+                VALUES(segment, line_record.name, oneway, line_record.highway, meters, line_record.osm_id);
             	lastfraction := fraction;
             END IF;
             
@@ -49,9 +51,9 @@ BEGIN
         
         SELECT ST_Length(geography(segment), true) INTO meters;
         
-        INSERT INTO SEGMENTS(segment,name,oneway,highway, meters)
-        VALUES(segment, line_record.name, oneway, line_record.highway, meters);
+        INSERT INTO SEGMENTS(segment,name,oneway,highway, meters, osm_id)
+        VALUES(segment, line_record.name, oneway, line_record.highway, meters,line_record.osm_id);
     END LOOP;
     
-    SELECT pgr_createTopology('segments',0,'segment','id','source','target');
+    RETURN pgr_createTopology('segments',0,'segment','id','source','target');
 END; $BODY$;

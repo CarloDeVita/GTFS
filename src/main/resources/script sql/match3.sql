@@ -1,5 +1,6 @@
-CREATE OR REPLACE FUNCTION public.matchseg()
-RETURNS void LANGUAGE 'plpgsql' AS $BODY$
+DROP FUNCTION IF EXISTS match_gtfs_shapes();
+CREATE OR REPLACE FUNCTION public.match_gtfs_shapes()
+RETURNS TEXT LANGUAGE 'plpgsql' AS $BODY$
 DECLARE
     sh_cur CURSOR FOR SELECT shape_id, coordinate FROM gtfs.shape_points ORDER BY shape_id, sequencenumber ASC;
     seg_id INTEGER;
@@ -14,6 +15,7 @@ DECLARE
     currtarget INTEGER;
     seg geometry;
 BEGIN
+    TRUNCATE TABLE matchedsegments CASCADE;
 
     lastShape := NULL;
     last_seg := NULL;
@@ -31,7 +33,7 @@ BEGIN
             SELECT CASE WHEN ST_Distance(sh_rec.coordinate,ST_StartPoint(S.segment))<ST_Distance(sh_rec.coordinate,ST_EndPoint(S.segment))
                         THEN S.source ELSE S.target END,S.id INTO currtarget, seg_id
             FROM segments S
-            WHERE ST_DWithin(sh_rec.coordinate, S.segment, 0.00075)
+            WHERE ST_DWithin(sh_rec.coordinate, S.segment, 0.00025)
             ORDER BY St_Distance(sh_rec.coordinate, S.segment)
             LIMIT 1;
 
@@ -47,10 +49,10 @@ BEGIN
             SELECT degrees(st_azimuth(lastCoordinate,sh_rec.coordinate))
             INTO angle;
 
-            --TODO explain
+            --//TODO explain
             SELECT S2.id, S2.source, S2.target, S2.segment INTO seg_id, currsource, currtarget, seg
             FROM (SELECT * FROM segments S
-                  WHERE ST_DWithin(sh_rec.coordinate, S.segment, 0.00075)
+                  WHERE ST_DWithin(sh_rec.coordinate, S.segment, 0.00025)
                   ORDER BY St_Distance(sh_rec.coordinate, S.segment) ASC
                   LIMIT 5) S2
             ORDER BY CAST(((CASE WHEN S2.oneway IS NOT NULL AND S2.oneway='true' THEN MinimumAngle(angle, ST_StartPoint(S2.segment), ST_EndPoint(S2.segment))
@@ -96,7 +98,8 @@ BEGIN
         lastCoordinate:=sh_rec.coordinate;
         lasttarget:=currtarget;
         last_seg := seg_id;
-
+        
     END LOOP;
+    RETURN 'OK';
 END; $BODY$;
 

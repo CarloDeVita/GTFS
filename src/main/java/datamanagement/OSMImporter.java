@@ -84,18 +84,26 @@ public class OSMImporter {
     }
 
     /**
+     * Same as @link
+     */
+    public boolean importData(String filePath){
+        return importData(filePath,false);
+    }
+    
+    /**
      * 
      * @param filePath the path of the file containing the OpenStreetMap data.
      * @return true if the import was successful, false otherwise.
      */
-    public boolean importData(String filePath){
+    public boolean importData(String filePath, boolean clean){
         if(username==null || password==null || database==null || directory==null) return false;
         // build command
         List<String> command = new LinkedList<>();
-        command.add(directory+"\\"+exec); //executable
-        command.add("-S");command.add(directory+"\\default.style"); //style file
+        command.add(directory+System.getProperty("file.separator")+exec); //executable
+        command.add("-S");command.add(directory+System.getProperty("file.separator")+"roads.style"); //style file
         command.add("-l"); //WGS84 lat-lon projection
-        command.add("-s"); // slim mode
+        if(!clean) command.add("-s"); // slim mode
+        if(!clean) command.add("--append");
         command.add("-r");command.add("xml"); //specify file format
         command.add("-U");command.add(username); //Set database user
         command.add("-W"); //Get password from input
@@ -116,19 +124,28 @@ public class OSMImporter {
             out.write((password+"\n").getBytes());
             out.close();
 
-            // consume output to make the process end            
-            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-            String line;
-            while ((line = reader.readLine()) != null)
-                System.out.println(line);
+            new Thread(){
+                @Override
+                public void run(){
+                    // consume output to make the process end            
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+                    String line;
+                    try {
+                        while ((line = reader.readLine()) != null)
+                            System.out.println(line);
+                    } catch (IOException ex) {
+                        Logger.getLogger(OSMImporter.class.getName()).log(Level.SEVERE, null, ex);
+                    }
+                }
+            }.start();
           
             // wait for the process to end and check the exit code
             int ret = process.waitFor();
             System.out.println("-----------------------------------------------------------");
             return ret==0;
-        } catch (IOException ex) {
+        } catch (IOException | InterruptedException ex) {
             Logger.getLogger(OSMImporter.class.getName()).log(Level.SEVERE, null, ex);
             return false;
-        }catch(InterruptedException ex){ return false; }
+        }
     }
 }

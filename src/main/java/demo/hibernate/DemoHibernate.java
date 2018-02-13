@@ -14,11 +14,15 @@ import com.vividsolutions.jts.geom.MultiPoint;
 import com.vividsolutions.jts.geom.Point;
 import com.vividsolutions.jts.geom.PrecisionModel;
 import gtfs.Feed;
+import gtfs.dao.FeedDAO;
 import gtfs.entities.Route;
 import gtfs.entities.Stop;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedList;
+import javax.swing.JDialog;
+import javax.swing.JFrame;
+import javax.swing.JOptionPane;
 
 /**
  *
@@ -27,8 +31,8 @@ public class DemoHibernate {
     public static void main(String[] args) throws IOException {
         HibernateUtil hibernateUtil = null;
         try{
-            HibernateUtil.setDefaultCatalog("postgisTest");
-            hibernateUtil = HibernateUtil.getInstance();
+            HibernateUtil.setDefaultCatalog("sfDB");
+            //hibernateUtil = HibernateUtil.getInstance();
             //if(true) return;
             Preferences pref = Preferences.userNodeForPackage(DemoHibernate.class);
             String dirpath = pref.get("gtfs_dir", System.getProperty("user.home"));
@@ -43,39 +47,18 @@ public class DemoHibernate {
                 File file = ch.getSelectedFile();
                 dirpath = file.getAbsolutePath();
                 FeedParser feedParser = new FeedParser();
+                
                 long start = System.currentTimeMillis();
                 Feed feed = feedParser.read(dirpath);
                 if(false)
                     throw new FileNotFoundException();
                 long end = System.currentTimeMillis();
                 System.out.println("Ottenuto feed in tempo : "+ ((end-start)/1000.)+" secondi");
-                hibernateUtil.saveCollection(feed.getAgencies());
-                System.out.println("|------------ Saved agencies-----------|");
-                hibernateUtil.saveCollection(feed.getRoutes());
-                System.out.println("|------------ Saved routes-----------|");
-                hibernateUtil.saveCollection(feed.getCalendars());
-                System.out.println("|------------ Saved calendars-----------|");
-                if(feed.getShapes()!=null)
-                    hibernateUtil.saveCollection(feed.getShapes());
-                System.out.println("|------------ Saved shapes-----------|");
-                hibernateUtil.saveCollection(feed.getTrips());
-                System.out.println("|------------ Saved trips-----------|");
-                LinkedList<Stop> noParent = new LinkedList<>();
-                LinkedList<Stop> withParent = new LinkedList<>();
-                for(Stop s : feed.getStops()){
-                    if(s.getParent()==null)
-                        noParent.add(s);
-                    else
-                        withParent.add(s);
-                }
-                hibernateUtil.saveCollection(noParent);
-                hibernateUtil.saveCollection(withParent);
-                System.out.println("|------------ Saved stops-----------|");
-                hibernateUtil.saveCollection(feed.getStopTimes());
-                System.out.println("|------------ Saved stop times-----------|");
-                if(feed.getFrequencies()!=null)
-                    hibernateUtil.saveCollection(feed.getFrequencies());
-                System.out.println("|------------ Saved frequencies-----------|");
+
+                new FeedDAO().save(feed);
+                System.out.println("Salvato in : " + (System.currentTimeMillis()-end)/1000. +" secondi");
+                while(true);
+                
             }
             GeometryFactory factory;
                 factory = new GeometryFactory(new PrecisionModel(PrecisionModel.FLOATING), 4326);
@@ -86,7 +69,7 @@ public class DemoHibernate {
         }
         finally{
             if(hibernateUtil!=null)
-                hibernateUtil.close();
+                HibernateUtil.getInstance().close();
         }
         return;
     }

@@ -4,7 +4,7 @@
 
 CREATE OR REPLACE FUNCTION public.matchseg()
 RETURNS void LANGUAGE 'plpgsql' AS $BODY$
-declare
+DECLARE
     sh_cur cursor for select * from gtfs.shape_points ORDER BY shape_id, sequencenumber;
     seg_id INTEGER;
     last_seg INTEGER;

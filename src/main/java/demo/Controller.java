@@ -151,8 +151,8 @@ public class Controller {
             time = System.currentTimeMillis() - time;
             System.out.println("NOTICE : Shapes matched with the street map in "+time/1000.+" seconds");
             
-            /*String query =" select S.segment from matchedsegments M join segments S on M.segment=S.id where shape_id = ?";
-            PreparedStatement s = conn.prepareStatement(query);
+            String query =" select S.segment from matchedsegments M join segments S on M.segment=S.id where shape_id = ?";
+           /* PreparedStatement s = conn.prepareStatement(query);
             s.setString(1, firstShape.getId());
             ResultSet rs = s.executeQuery();
             rs.next();

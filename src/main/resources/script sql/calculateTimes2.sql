@@ -33,7 +33,7 @@ BEGIN
             VALUES(seg_id, cur_rec.calendar, cur_rec.name, cur_rec.arrival);
             i:=i+1;
 
-
+            
             last_time := cur_rec.arrival;
             shp_sequence := 1;
         ELSE
@@ -56,7 +56,7 @@ BEGIN
                     dist_traveled := path_rec.meters;
                 ELSE 
                     INSERT INTO PASSAGES(SEGMENT,CALENDAR,BUS,TIMEPASS) 
-                    VALUES(path_rec.id, cur_rec.calendar, cur_rec.name, last_time + dist_traveled*avg_vel);
+                    VALUES(path_rec.id, cur_rec.calendar, cur_rec.name, last_time + (dist_traveled/avg_vel);
 
                     dist_traveled := dist_traveled + path_rec.meters;
                 END IF;

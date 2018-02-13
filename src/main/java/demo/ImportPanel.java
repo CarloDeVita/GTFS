@@ -33,7 +33,7 @@ public class ImportPanel extends javax.swing.JPanel {
 
         jLabel1.setText("Get GTFS");
 
-        urlText.setText("URL");
+        urlText.setToolTipText("URL");
 
         downloadButton.setText("Download");
         downloadButton.addActionListener(new java.awt.event.ActionListener() {
