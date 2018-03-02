@@ -20,6 +20,18 @@ import org.apache.commons.io.input.BOMInputStream;
  * @param <T> the GTFS entity class.
  */
 public abstract class GTFSParser<T extends GTFS> {
+    private String fileName;
+    protected int numberOfParameters;
+
+    /**
+     * 
+     * @param fileName name of the file to be read.
+     * @param maxFields maximum number of fields of the file.
+     */
+    protected GTFSParser(String fileName, int maxFields){
+        this.fileName = fileName;
+        this.numberOfParameters = maxFields; 
+    }
     
     /**
      * Tells wether the parser is ready or not.
@@ -46,9 +58,8 @@ public abstract class GTFSParser<T extends GTFS> {
         Collection<T> result = new HashSet<>();
         // build file path
         if(dirpath.charAt(dirpath.length()-1)!='/') dirpath += "/";
-        String path = dirpath + getFileName();
+        String path = dirpath + fileName;
         
-        int numberOfParameters = numberOfParameters();
         int[] columnToParameter = new int[numberOfParameters];
         String row[] = new String[numberOfParameters];
         
@@ -124,11 +135,6 @@ public abstract class GTFSParser<T extends GTFS> {
     }
     
     /**
-     * @return the name of the file to parse (including it's extension).
-     */
-    public abstract String getFileName();
-    
-    /**
      * Associates each column with the corresponding parameter number.
      * <p>The method must map each column in the continous range of integers
      * that goes from 0 to the value returned by {@link #numberOfParameters()}</p>
@@ -154,9 +160,8 @@ public abstract class GTFSParser<T extends GTFS> {
      * @param result the result being calculated.
      */
     protected abstract void processRow(String parameters[], Collection<T> result);
-    
-    /**
-     * @return the maximum number of columns of the file.
-     */
-    public abstract int numberOfParameters();
+
+    public String getFileName(){
+        return fileName;
+    }
 }

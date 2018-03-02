@@ -19,6 +19,10 @@ public class TripParser extends GTFSParser<Trip> {
     // associates each id with the corresponding shape
     private Map<String, Shape> shapes = new HashMap<>();
     
+    public TripParser(){
+        super("trips.txt", 10);
+    }
+    
     /**
      * 
      * @return true if at least one route and one calendar has been added, false otherwise.
@@ -178,10 +182,4 @@ public class TripParser extends GTFSParser<Trip> {
         Trip trip = new Trip(route, calendar, id, headSign, shortName, direction, wheelchairAllowed, bikesAllowed, shape);
         result.add(trip);
     }
-
-    @Override
-    public int numberOfParameters() {
-        return 10;
-    }
-    
 }

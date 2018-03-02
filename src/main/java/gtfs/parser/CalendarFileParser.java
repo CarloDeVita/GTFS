@@ -13,9 +13,8 @@ import java.util.Map;
  */
 public class CalendarFileParser extends GTFSParser<Calendar>{
     
-    @Override
-    public String getFileName() {
-        return "calendar.txt";
+    public CalendarFileParser(){
+        super("calendar.txt", 10);
     }
 
     @Override
@@ -37,8 +36,7 @@ public class CalendarFileParser extends GTFSParser<Calendar>{
 
     @Override
     protected boolean checkRequired(String[] firstRow) {
-        return (firstRow.length == numberOfParameters());
-        
+        return (firstRow.length == numberOfParameters);
     }
 
     @Override
@@ -84,11 +82,6 @@ public class CalendarFileParser extends GTFSParser<Calendar>{
         // creates and add the calendar
         Calendar calendar = new Calendar(id, startDate, endDate, days);
         result.add(calendar);
-    }
-
-    @Override
-    public int numberOfParameters() {
-        return 10;
     }
     
     /**

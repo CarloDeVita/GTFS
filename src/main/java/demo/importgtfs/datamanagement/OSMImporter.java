@@ -1,4 +1,4 @@
-package datamanagement;
+package demo.importgtfs.datamanagement;
 
 import java.io.BufferedReader;
 import java.io.IOException;

@@ -12,9 +12,8 @@ public class AgencyParser extends GTFSParser<Agency> {
     private boolean noAgencyId; // tells wheter "agency_id" column has been declared
     private int records; // number or records found
     
-    @Override
-    public String getFileName() {
-        return "agency.txt";
+    public AgencyParser(){
+        super("agency.txt", 8);
     }
 
     @Override
@@ -80,11 +79,6 @@ public class AgencyParser extends GTFSParser<Agency> {
         }
         noAgencyId = !id;
         return(name && url && timezone);
-    }
-
-    @Override
-    public int numberOfParameters() {
-        return 8;
     }
     
     @Override

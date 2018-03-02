@@ -17,6 +17,9 @@ public class RouteParser extends GTFSParser<Route>{
     // if the agency 
     private Agency uniqueAgency;
     
+    public RouteParser(){
+        super("agencies.txt", 9);
+    }
     /**
      * Adds the agencies to the parser.
      * <p>These agencies are used to check the references in agency_id column
@@ -60,11 +63,6 @@ public class RouteParser extends GTFSParser<Route>{
     }
     
     @Override
-    public String getFileName() {
-        return "routes.txt";
-    }
-
-    @Override
     protected int columnToParameter(String name) {
         switch(name){
             case "route_id" : return 0;
@@ -98,11 +96,6 @@ public class RouteParser extends GTFSParser<Route>{
         }
         if(!agency && agencies.size()!=1) return false;
         return(id && type && (short_name || long_name));
-    }
-
-    @Override
-    public int numberOfParameters() {
-        return 9;
     }
 
     @Override

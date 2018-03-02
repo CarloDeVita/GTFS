@@ -3,7 +3,7 @@ DROP FUNCTION IF EXISTS populatesegments();
 CREATE OR REPLACE FUNCTION public.populatesegments()
 RETURNS TEXT LANGUAGE 'plpgsql' AS $BODY$
 DECLARE
-    line_cursor CURSOR FOR SELECT osm_id, way, junction, oneway, name, highway
+    line_cursor CURSOR FOR SELECT osm_id, way, junction, oneway, name, highway, layer
                            FROM planet_osm_line 
                            WHERE highway NOT IN ('path', 'footway', 'pedestrian', 'bridleway', 'steps','raceway', 'cycleway','proposed','construction', 'corridor');
     n INTEGER;
@@ -31,7 +31,7 @@ BEGIN
             
             SELECT COUNT(*)+1 INTO counter
             FROM planet_osm_line L
-            WHERE ST_Intersects(L.way, p) AND
+            WHERE ST_Intersects(L.way, p) AND ((line_record.layer IS NULL AND L.layer IS NULL) OR line_record.layer<>L.layer) AND
             	 L.highway NOT IN ('path', 'footway', 'pedestrian', 'bridleway', 'steps','raceway', 'cycleway','proposed','construction', 'corridor');
             
             IF(counter>=3) THEN

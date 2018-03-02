@@ -1,4 +1,4 @@
-package datamanagement;
+package demo.importgtfs.datamanagement;
 import com.vividsolutions.jts.geom.Envelope;
 import java.io.IOException;
 import java.io.InputStream;

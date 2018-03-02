@@ -16,13 +16,22 @@ import org.openstreetmap.gui.jmapviewer.MapPolygonImpl;
 import org.openstreetmap.gui.jmapviewer.interfaces.ICoordinate;
 
 public class MapLine extends MapPolygonImpl {
-    Graphics2D g2d;
-    Path2D path2d;
+    private Graphics2D g2d;
+    private Path2D path2d;
+    private Color color = Color.BLUE;
+    
     public MapLine(List<? extends ICoordinate> points) {
         super(points);
     }
     
+    public MapLine(List<? extends ICoordinate> points, Color color){
+        this(points);
+        this.color = color;
+    }
     
+    public void setColor(Color color){
+        this.color = color;
+    }
     
     public void repaint(Color c){
         g2d.setColor(c);
@@ -33,7 +42,7 @@ public class MapLine extends MapPolygonImpl {
     public void paint(Graphics g, List<Point> points) {
         if (g2d==null){ 
             g2d = (Graphics2D) g.create();
-            g2d.setColor(Color.BLUE);
+            g2d.setColor(this.color);
         }
         g2d.setStroke(getStroke());
         path2d = buildPath(points);

@@ -1,8 +1,8 @@
 package demo;
 
 import com.vividsolutions.jts.geom.Envelope;
-import datamanagement.MapDownloader;
-import datamanagement.OSMImporter;
+import demo.importgtfs.datamanagement.MapDownloader;
+import demo.importgtfs.datamanagement.OSMImporter;
 import demo.hibernate.HibernateUtil;
 import demo.maputils.IconMarker;
 import demo.maputils.MapLine;

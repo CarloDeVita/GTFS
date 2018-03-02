@@ -19,16 +19,15 @@ public class StopParser extends GTFSParser<Stop> {
     // associates a Stop waiting for its parent to be found to its parent station id
     Map<Stop, String> pendingForParent = new HashMap<>();
     
+    public StopParser(){
+        super("stops.txt", 12);
+    }
+    
     @Override
     public void clear(){
         super.clear();
         stations.clear();
         pendingForParent.clear();
-    }
-    
-    @Override
-    public String getFileName() {
-        return "stops.txt";
     }
 
     @Override
@@ -169,10 +168,5 @@ public class StopParser extends GTFSParser<Stop> {
         // add the stop to the result
         if(stop.isStation() || parentString==null || parent!=null)
             result.add(stop);
-    }
-    
-    @Override
-    public int numberOfParameters() {
-        return 12;
     }
 }

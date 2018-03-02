@@ -1,4 +1,4 @@
-package datamanagement;
+package demo.importgtfs.datamanagement;
 
 import demo.hibernate.HibernateUtil;
 import org.hibernate.Session;
@@ -12,10 +12,14 @@ public class ShapeMatcher {
     public boolean match(){
         HibernateUtil hibernateUtil = HibernateUtil.getInstance();
         Session session = hibernateUtil.openSession();
-        ProcedureCall procedure = session.createStoredProcedureCall("matchseg");
+        ProcedureCall procedure = session.createStoredProcedureCall("match_gtfs_shapes");
         procedure.setTimeout(0); // indeterminate time
         procedure.execute();
         session.close();
         return true;
+    }
+    
+    public static void main(String args[]){
+        new ShapeMatcher().match();
     }
 }

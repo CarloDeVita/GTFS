@@ -11,16 +11,22 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class FeedDAO {
+    
     public boolean save(final Feed feed){
+       return save(feed, true); 
+    }
+    
+    public boolean save(final Feed feed, boolean clear){
         final HibernateUtil hibernateUtil = HibernateUtil.getInstance();
         Thread threads[] = new Thread[4];
         long time = System.currentTimeMillis();
         
-        hibernateUtil.deleteAllFrom("Agency");
-        hibernateUtil.deleteAllFrom("Calendar");
-        hibernateUtil.deleteAllFrom("Stop");
-        hibernateUtil.deleteAllFrom("Shape");
-        
+        if(clear){
+            hibernateUtil.deleteAllFrom("Agency");
+            hibernateUtil.deleteAllFrom("Calendar");
+            hibernateUtil.deleteAllFrom("Stop");
+            hibernateUtil.deleteAllFrom("Shape");
+        }
         
         threads[0] = new Thread(){
                         @Override

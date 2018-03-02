@@ -14,6 +14,10 @@ public class CalendarDatesParser extends GTFSParser<Calendar>{
     // a map that associates each id with the corresponding calendar
     private final Map<String,Calendar> calendars = new HashMap<>();
 
+    public CalendarDatesParser(){
+        super("calendar_dates.txt",3);
+    }
+    
     @Override
     public void clear(){
         calendars.clear();
@@ -31,11 +35,6 @@ public class CalendarDatesParser extends GTFSParser<Calendar>{
     }
     
     @Override
-    public String getFileName() {
-        return "calendar_dates.txt";
-    }
-
-    @Override
     protected int columnToParameter(String name) {
         switch(name){
             case "service_id": return 0;
@@ -47,7 +46,7 @@ public class CalendarDatesParser extends GTFSParser<Calendar>{
 
     @Override
     protected boolean checkRequired(String[] firstRow) {
-        return (firstRow.length == numberOfParameters()); //all attributes required
+        return (firstRow.length == numberOfParameters); //all attributes required
     }
 
     @Override
@@ -84,10 +83,5 @@ public class CalendarDatesParser extends GTFSParser<Calendar>{
             result.add(c);
         }
         c.setDate(date, exceptionType);
-    }
-
-    @Override
-    public int numberOfParameters() {
-        return 3;
     }
 }

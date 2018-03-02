@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package demo;
+package demo.importgtfs;
 
 import java.awt.Dimension;
 import javax.swing.JLabel;
@@ -18,8 +18,8 @@ public class ProgressDialog extends javax.swing.JDialog {
 
     private JLabel labels[];
     private JProgressBar pBars[];
-    private JScrollPane textScrollPane;
-    private JTextArea textArea;
+    //private JScrollPane textScrollPane;
+    //private JTextArea textArea;
     private long startTimes[];
     
     
@@ -41,12 +41,12 @@ public class ProgressDialog extends javax.swing.JDialog {
         }
         
         
-        textArea = new JTextArea();
+        /*textArea = new JTextArea();
         textArea.setColumns(20);
         textArea.setRows(5);
         textArea.setEditable(false);
-        textScrollPane = new JScrollPane();
-        textScrollPane.setViewportView(textArea);
+        //textScrollPane = new JScrollPane();
+        //textScrollPane.setViewportView(textArea);*/
         
         
         GroupLayout layout = new GroupLayout(getContentPane());
@@ -54,7 +54,7 @@ public class ProgressDialog extends javax.swing.JDialog {
 
         // create horizontal layout
         ParallelGroup parallelH = layout.createParallelGroup(GroupLayout.Alignment.LEADING);        
-        parallelH.addComponent(textScrollPane, GroupLayout.DEFAULT_SIZE, 421, Short.MAX_VALUE);
+        //parallelH.addComponent(textScrollPane, GroupLayout.DEFAULT_SIZE, 421, Short.MAX_VALUE);
         for(int i=0 ; i<tasks.length ; i++) //add the group composed by the label and the progress bar
             parallelH.addGroup(layout.createSequentialGroup()
                     .addComponent(labels[i])
@@ -81,8 +81,8 @@ public class ProgressDialog extends javax.swing.JDialog {
                     .addComponent(pBars[i], javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE));
         }
         
-        seqV.addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 50, Short.MAX_VALUE)
-                .addComponent(textScrollPane, javax.swing.GroupLayout.PREFERRED_SIZE, 128, javax.swing.GroupLayout.PREFERRED_SIZE)
+        seqV.addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 20/*50*/, Short.MAX_VALUE)
+                //.addComponent(textScrollPane, javax.swing.GroupLayout.PREFERRED_SIZE, 128, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap();
             
         layout.setVerticalGroup(
@@ -128,9 +128,8 @@ public class ProgressDialog extends javax.swing.JDialog {
                 seconds -= hours*3600;
                 minutes = (int) (seconds/60.);
                 seconds -= minutes*60;
-                append(String.format("%s took %d hours, %d minutes and %.2f seconds", labels[op].getText(), hours, minutes, seconds));
+                //append(String.format("%s took %d hours, %d minutes and %.2f seconds", labels[op].getText(), hours, minutes, seconds));
                 }catch(Exception e ){
-                    System.err.println("Errore in stampa");
                     System.err.println(e.getMessage());
                 }
                 break;
@@ -142,10 +141,10 @@ public class ProgressDialog extends javax.swing.JDialog {
         }
     }
     
-    public void append(String message){
+    /*public void append(String message){
         textArea.append(message);
         textArea.append("\n");
-    }
+    }*/
 
     /**
      * This method is called from within the constructor to initialize the form.

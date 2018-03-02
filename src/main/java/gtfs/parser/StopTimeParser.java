@@ -20,6 +20,10 @@ public class StopTimeParser extends GTFSParser<StopTime>{
     // last trip found in file
     private String lastTrip;
     
+    public StopTimeParser(){
+        super("stop_times.txt", 10);
+    }
+    
     /**
      * Adds the trips to the parser.
      * These trips are used to check the reference in trip_id field.
@@ -58,11 +62,6 @@ public class StopTimeParser extends GTFSParser<StopTime>{
     @Override
     public boolean isReady(){
         return (trips!=null && stops!=null && !trips.isEmpty() && !stops.isEmpty());
-    }
-    
-    @Override
-    public String getFileName() {
-        return "stop_times.txt";
     }
 
     @Override
@@ -204,10 +203,5 @@ public class StopTimeParser extends GTFSParser<StopTime>{
         lastTrip = tripId;
         // add the stoptime to the result
         result.add(s);
-    }
-
-    @Override
-    public int numberOfParameters() {
-        return 10;
     }
 }

@@ -16,6 +16,10 @@ public class FrequencyParser extends GTFSParser<Frequency>{
     // the exact time value of the file (decided by the second row)
     private Boolean fileExactTimes;
     
+    public FrequencyParser(){
+        super("frequencies.txt", 5);
+    }
+    
     /**
      * 
      * @return true if at least one trip has been added to the parser, false otherwise.
@@ -46,11 +50,6 @@ public class FrequencyParser extends GTFSParser<Frequency>{
         fileExactTimes = null;
     }
     
-    @Override
-    public String getFileName() {
-        return "frequencies.txt";
-    }
-
     @Override
     protected int columnToParameter(String name) {
         switch(name){
@@ -140,10 +139,4 @@ public class FrequencyParser extends GTFSParser<Frequency>{
         Frequency frequency = new Frequency(trip, start, end, headwaySec, exact);
         result.add(frequency);
     }
-
-    @Override
-    public int numberOfParameters() {
-        return 5;
-    }
-    
 }

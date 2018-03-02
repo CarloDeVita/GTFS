@@ -16,6 +16,10 @@ public class ShapeParser extends GTFSParser<Shape>{
     // associates each shape id with the corresponding last distance traveled value found
     private Map<String, Double> lastDistances = new HashMap<>();
      
+    public ShapeParser(){
+        super("shapes.txt", 5);
+    }
+    
     @Override
     public void clear(){
         super.clear();
@@ -23,11 +27,6 @@ public class ShapeParser extends GTFSParser<Shape>{
         lastSequences.clear();
         lastDistances.clear();
     }        
-            
-    @Override
-    public String getFileName() {
-        return "shapes.txt";
-    }
 
     @Override
     protected int columnToParameter(String name) {
@@ -143,10 +142,5 @@ public class ShapeParser extends GTFSParser<Shape>{
         lastSequences.put(shapeId, sequence);
         if(distance>=0)
             lastDistances.put(shapeId, distance);    
-    }
-
-    @Override
-    public int numberOfParameters() {
-        return 5;
     }
 }

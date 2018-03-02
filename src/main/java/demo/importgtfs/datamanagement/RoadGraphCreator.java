@@ -1,4 +1,4 @@
-package datamanagement;
+package demo.importgtfs.datamanagement;
 
 import demo.hibernate.HibernateUtil;
 import java.sql.SQLException;
